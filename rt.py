@@ -3,6 +3,8 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from functools import partial
+from multiprocessing import Pool
 from numpy.core.umath_tests import inner1d
 
 from utils import read_tri, Triangle
@@ -15,7 +17,7 @@ def normalize(x):
     return x / np.linalg.norm(x)
 
 
-def _trace_ray(mat_p, mat_n, mat_c, mat_light, ray_ori, ray_drt, reflection, depth, test_hit=False):
+def _trace_ray(ray_ori, ray_drt, mat_p, mat_n, mat_c, mat_light, reflection, depth, test_hit=False):
 
     denom = np.dot(mat_n, ray_drt) + 1e-12
     dist = inner1d(mat_p[:, 0, :].squeeze() - ray_ori, mat_n) / denom
@@ -52,7 +54,7 @@ def _trace_ray(mat_p, mat_n, mat_c, mat_light, ray_ori, ray_drt, reflection, dep
         for light_src in mat_light:
             new_ray_drt = normalize(light_src - new_ray_ori)
             _, rtn_dist, rtn_pnt = _trace_ray(
-                mat_p, mat_n, mat_c, mat_light, new_ray_ori + 0.001 * new_ray_drt, new_ray_drt, reflection, 1, test_hit=True)
+                new_ray_ori + 0.001 * new_ray_drt, new_ray_drt, mat_p, mat_n, mat_c, mat_light, reflection, 1, test_hit=True)
 
             if rtn_pnt is None or rtn_dist > np.linalg.norm(light_src - new_ray_ori):
                 break
@@ -99,7 +101,7 @@ def _trace_ray(mat_p, mat_n, mat_c, mat_light, ray_ori, ray_drt, reflection, dep
             ray_drt - 2 * np.dot(ray_drt, mat_n[idx_min, :]) * mat_n[idx_min, :])
         new_ray_ori = pnt_int[idx_min, :] + 0.001 * new_ray_drt
         new_col_ray, rtn_dist, rtn_pnt = _trace_ray(
-            mat_p, mat_n, mat_c, mat_light, new_ray_ori, new_ray_drt, reflection * 0.5, depth - 1)
+            new_ray_ori, new_ray_drt, mat_p, mat_n, mat_c, mat_light, reflection * 0.5, depth - 1)
 
         if new_col_ray is not None:
             col_ray = col_ray + new_col_ray * reflection
@@ -124,8 +126,6 @@ def ray_trace(tris):
         [125., 195., -280.],
         [-125., 195., -280.]
     ])
-
-    # mat_p -= np.max(mat_p.reshape((-1, 3)), axis=0)
 
     global ori
     ori = np.array([1000., 0., 0.], dtype=np.float32)
@@ -154,21 +154,28 @@ def ray_trace(tris):
     ])
 
     ori = np.dot(rx, ori + np.array([0., 250., 10.]))
-    for col, x in enumerate(np.linspace(S[0], S[2], w)):
-        for row, y in enumerate(np.linspace(S[1], S[3], h)):
+    reflection = .35
+    max_depth = 3
+
+    ray_ori, ray_drt = [], []
+    for row, y in enumerate(np.linspace(S[1], S[3], h)):
+        for col, x in enumerate(np.linspace(S[0], S[2], w)):
             dst = np.array([300., x, y])
             dst = np.dot(rx, dst + np.array([0., 250., 10.]))
             drt = normalize(dst - ori)
-            ray_ori, ray_drt = ori, drt
-            reflection = .35
-            max_depth = 3
+            ray_ori.append(ori)
+            ray_drt.append(drt)
 
-            color, _, pnt = _trace_ray(
-                mat_p, mat_n, mat_c, mat_light, ray_ori, ray_drt, reflection, max_depth)
-            if color is None:
-                color = np.array([0., 0., 0.])
+    p_trace_ray = partial(_trace_ray, mat_p=mat_p, mat_n=mat_n, mat_c=mat_c,
+                          mat_light=mat_light, reflection=reflection, depth=max_depth)
+    with Pool(processes=None) as pool:
+        img = pool.starmap(p_trace_ray, zip(ray_ori, ray_drt))
 
-            img[h - row - 1, col, :] = np.clip(color, 0, 1)
+    img = np.array(img)[:, 0]
+    img = [np.zeros((3,)) if pix is None else pix for pix in img]
+    img = np.clip(img, 0., 1.)
+    img = img.reshape((w, h, -1))
+    img = np.flipud(img)
 
     plt.imsave('fig.png', img)
 
