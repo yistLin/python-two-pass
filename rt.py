@@ -9,12 +9,29 @@ from numpy.core.umath_tests import inner1d
 
 from utils import read_tri, Triangle
 
-# camera view
-ori = np.array([0., 0., 0.])
-
 
 def normalize(x):
     return x / np.linalg.norm(x)
+
+
+def rotate(mat, rad, axis):
+    rot_mats = np.array([
+        [1., 0., 0.],
+        [0., np.cos(rad), -np.sin(rad)],
+        [0., np.sin(rad), np.cos(rad)],
+        [np.cos(rad), 0., np.sin(rad)],
+        [0., 1., 0.],
+        [-np.sin(rad), 0., np.cos(rad)],
+        [np.cos(rad), -np.sin(rad), 0.],
+        [np.sin(rad), np.cos(rad), 0.],
+        [0., 0., 1.]
+    ])
+    rot_mat = {
+            'x': rot_mats[:3, :],
+            'y': rot_mats[3:6, :],
+            'z': rot_mats[6:, :]
+        }[axis]
+    return np.dot(rot_mat, mat)
 
 
 def _trace_ray(ray_ori, ray_drt, mat_p, mat_n, mat_c, mat_light, reflection, depth, test_hit=False):
@@ -110,8 +127,8 @@ def _trace_ray(ray_ori, ray_drt, mat_p, mat_n, mat_c, mat_light, reflection, dep
 
 
 def ray_trace(tris):
-    w = 500
-    h = 500
+    w = 400
+    h = 400
     img = np.zeros((w, h, 3))
 
     mat_p = np.array([tri.p for tri in tris], dtype=np.float32)
@@ -127,41 +144,22 @@ def ray_trace(tris):
         [-125., 195., -280.]
     ])
 
-    global ori
     ori = np.array([1000., 0., 0.], dtype=np.float32)
     dst = np.array([300., 0., 0.], dtype=np.float32)
 
     S = (-200, -200, 200, 200)
-    rad_x = -np.pi / 2
-    rx = np.array([
-        [1., 0., 0.],
-        [0., np.cos(rad_x), -np.sin(rad_x)],
-        [0., np.sin(rad_x), np.cos(rad_x)]
-    ])
 
-    rad_y = np.pi * 0.05
-    ry = np.array([
-        [np.cos(rad_y), 0., np.sin(rad_y)],
-        [0., 1., 0.],
-        [-np.sin(rad_y), 0., np.cos(rad_y)]
-    ])
+    mat_trans = np.array([0., 250., 10.])
 
-    rad_z = np.pi * 0.15
-    rz = np.array([
-        [np.cos(rad_z), -np.sin(rad_z), 0.],
-        [np.sin(rad_z), np.cos(rad_z), 0.],
-        [0., 0., 1.]
-    ])
-
-    ori = np.dot(rx, ori + np.array([0., 250., 10.]))
-    reflection = .35
+    ori = rotate(ori + mat_trans, -np.pi / 2, 'x')
+    reflection = .25
     max_depth = 3
 
     ray_ori, ray_drt = [], []
     for row, y in enumerate(np.linspace(S[1], S[3], h)):
         for col, x in enumerate(np.linspace(S[0], S[2], w)):
             dst = np.array([300., x, y])
-            dst = np.dot(rx, dst + np.array([0., 250., 10.]))
+            dst = rotate(dst + mat_trans, -np.pi / 2, 'x')
             drt = normalize(dst - ori)
             ray_ori.append(ori)
             ray_drt.append(drt)
@@ -184,3 +182,4 @@ if __name__ == '__main__':
     import sys
     tris = read_tri(sys.argv[1])
     ray_trace(tris)
+
