@@ -27,10 +27,10 @@ def rotate(mat, rad, axis):
         [0., 0., 1.]
     ])
     rot_mat = {
-            'x': rot_mats[:3, :],
-            'y': rot_mats[3:6, :],
-            'z': rot_mats[6:, :]
-        }[axis]
+        'x': rot_mats[:3, :],
+        'y': rot_mats[3:6, :],
+        'z': rot_mats[6:, :]
+    }[axis]
     return np.dot(rot_mat, mat)
 
 
@@ -63,7 +63,7 @@ def _trace_ray(ray_ori, ray_drt, mat_p, mat_n, mat_c, mat_light, reflection, dep
 
     if not test_hit:
         # if hit the cover of light
-        is_shadowed = False
+        not_shadowed = []
         if np.array_equal(mat_c[idx_min, :], np.array([1., 1., 1.])):
             return mat_c[idx_min, :], dist[idx_min], pnt_int[idx_min, :]
 
@@ -74,16 +74,16 @@ def _trace_ray(ray_ori, ray_drt, mat_p, mat_n, mat_c, mat_light, reflection, dep
                 new_ray_ori + 0.001 * new_ray_drt, new_ray_drt, mat_p, mat_n, mat_c, mat_light, reflection, 1, test_hit=True)
 
             if rtn_pnt is None or rtn_dist > np.linalg.norm(light_src - new_ray_ori):
-                break
-        else:
-            is_shadowed = True
+                not_shadowed.append(True)
+            else:
+                not_shadowed.append(False)
 
         col_ray = np.array([0., 0., 0.])
 
-        if not is_shadowed:
+        if any(not_shadowed):
             N = mat_n[idx_min, :]
 
-            light_drt = mat_light - new_ray_ori
+            light_drt = mat_light[not_shadowed, :] - new_ray_ori
             light_drt = light_drt / \
                 np.expand_dims(np.linalg.norm(light_drt, axis=1), axis=1)
 
@@ -182,4 +182,3 @@ if __name__ == '__main__':
     import sys
     tris = read_tri(sys.argv[1])
     ray_trace(tris)
-
