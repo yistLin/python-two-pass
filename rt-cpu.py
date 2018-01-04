@@ -47,6 +47,14 @@ class RayTracer(object):
         self.mat_refl = mat_refl
         self.mat_refr = mat_refr
 
+        # speed up intersection test
+        self.v0 = self.mat_p[:, 2] - self.mat_p[:, 0]
+        self.v1 = self.mat_p[:, 1] - self.mat_p[:, 0]
+        self.d00 = inner1d(self.v0, self.v0)
+        self.d01 = inner1d(self.v0, self.v1)
+        self.d11 = inner1d(self.v1, self.v1)
+        self.invDenom = 1. / (self.d00 * self.d11 - self.d01 * self.d01)
+
     def trace(self, img_size, ori, dst, scene):
         img = np.zeros(img_size + (3,))
         x_coord = dst[0]
@@ -85,19 +93,17 @@ class RayTracer(object):
 
         pnt_int = ray_ori + dist.reshape((-1, 1)) * ray_drt
 
-        def same_side(d):
-            p2 = self.mat_p[:, d[0], :].squeeze()
-            a = self.mat_p[:, d[1], :].squeeze()
-            b = self.mat_p[:, d[2], :].squeeze()
-            cp1 = np.cross(b - a, pnt_int - a)
-            cp2 = np.cross(b - a, p2 - a)
-            return inner1d(cp1, cp2) >= 0
+        # Barycentric Technique
+        v2 = pnt_int - self.mat_p[:, 0]
+        d02 = inner1d(self.v0, v2)
+        d12 = inner1d(self.v1, v2)
+        u = (self.d11 * d02 - self.d01 * d12) * self.invDenom
+        v = (self.d00 * d12 - self.d01 * d02) * self.invDenom
 
-        within = np.ones((self.mat_p.shape[0],))
-        for d in [[0, 1, 2], [1, 0, 2], [2, 0, 1]]:
-            within = np.logical_and(within, same_side(d))
+        # inside triangle
+        within = (u >= 0.) & (v >= 0.) & (u + v < 1.)
 
-        dist[np.logical_not(within)] = np.inf
+        dist[~within] = np.inf
         dist[dist <= 0.] = np.inf
 
         if (dist == np.inf).all():
