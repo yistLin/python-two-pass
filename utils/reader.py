@@ -10,8 +10,11 @@ from utils import Triangle
 def xml_read_tri(fname):
     # important info
     mat_c = []
-    mat_r = []
+    mat_e = []
     mat_p = []
+    mat_spec = []
+    mat_refl = []
+    mat_refr = []
 
     # parse XML
     tree = ET.parse(fname)
@@ -25,10 +28,16 @@ def xml_read_tri(fname):
 
         # loop through triangles
         for tri in obj:
+            emission = tri.attrib['emission'].split(',')
             radiosity = tri.attrib['radiosity'].split(',')
-            reflectivity = tri.attrib['reflectivity'].split(',')
+            spec = tri.attrib['spec']
+            refl = tri.attrib['refl']
+            refr = tri.attrib['refr']
             mat_c.append([float(r) for r in radiosity])
-            mat_r.append([float(r) for r in reflectivity])
+            mat_e.append([float(e) for e in emission])
+            mat_spec.append(float(spec))
+            mat_refl.append(float(refl))
+            mat_refr.append(float(refr))
 
             # loop through vertices
             vertices = []
@@ -39,8 +48,11 @@ def xml_read_tri(fname):
             mat_p.append(vertices)
 
     return np.array(mat_c, dtype=np.float32), \
-           np.array(mat_r, dtype=np.float32), \
-           np.array(mat_p, dtype=np.float32)
+           np.array(mat_p, dtype=np.float32), \
+           np.array(mat_e, dtype=np.float32), \
+           np.array(mat_spec, dtype=np.float32), \
+           np.array(mat_refl, dtype=np.float32), \
+           np.array(mat_refr, dtype=np.float32)
 
 
 def read_tri(fname):

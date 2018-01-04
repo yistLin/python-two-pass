@@ -64,7 +64,7 @@ def _trace_ray(ray_ori, ray_drt, mat_p, mat_n, mat_c):
     return mat_c[idx_min, :]
 
 
-def ray_cast(mat_c, mat_r, mat_p):
+def ray_cast(mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr):
     w = 100
     h = 100
     img = np.zeros((w, h, 3))
@@ -109,6 +109,6 @@ def ray_cast(mat_c, mat_r, mat_p):
 
 if __name__ == '__main__':
     import sys
-    mat_c, mat_r, mat_p = xml_read_tri(sys.argv[1])
-    ray_cast(mat_c, mat_r, mat_p)
+    mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr = xml_read_tri(sys.argv[1])
+    ray_cast(mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr)
 
