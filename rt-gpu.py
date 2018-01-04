@@ -2,12 +2,15 @@
 # -*- coding: UTF-8 -*-
 
 import numpy as np
-import matplotlib.pyplot as plt
-from functools import partial
 from multiprocessing import Pool
 from numpy.core.umath_tests import inner1d
 
 from utils import xml_read_tri
+
+try:
+    from scipy.misc import imsave
+except:
+    from matplotlib.pyplot.plt import imsave
 
 
 def normalize(x):
@@ -34,81 +37,100 @@ def rotate(mat, rad, axis):
     return np.dot(mat, rot_mat)
 
 
-def _trace_ray(ray_ori, ray_drt, mat_p, mat_n, mat_c):
+class RayTracer(object):
+    def __init__(self, mat_c, mat_p, mat_n, mat_e, mat_spec, mat_refl, mat_refr):
+        self.mat_c = mat_c
+        self.mat_p = mat_p
+        self.mat_n = mat_n
+        self.mat_e = mat_e
+        self.mat_spec = mat_spec
+        self.mat_refl = mat_refl
+        self.mat_refr = mat_refr
 
-    denom = np.dot(mat_n, ray_drt) + 1e-12
-    dist = inner1d(mat_p[:, 0, :].squeeze() - ray_ori, mat_n) / denom
+    def trace(self, img_size, ori, dst, scene):
+        img = np.zeros(img_size + (3,))
+        x_coord = dst[0]
+        ray_ori, ray_drt = [], []
+        for row, z in enumerate(np.linspace(scene[1], scene[3], img_size[1])):
+            for col, y in enumerate(np.linspace(scene[0], scene[2], img_size[0])):
+                dst = np.array([x_coord, y, z])
+                drt = normalize(dst - ori)
+                ray_ori.append(dst)
+                ray_drt.append(drt)
 
-    pnt_int = ray_ori + dist.reshape((-1, 1)) * ray_drt
+        with Pool(processes=8) as pool:
+            img = pool.starmap(self._trace_ray, zip(ray_ori, ray_drt))
 
-    def same_side(d):
-        p2 = mat_p[:, d[0], :].squeeze()
-        a = mat_p[:, d[1], :].squeeze()
-        b = mat_p[:, d[2], :].squeeze()
-        cp1 = np.cross(b - a, pnt_int - a)
-        cp2 = np.cross(b - a, p2 - a)
-        return inner1d(cp1, cp2) >= 0
+        img = np.array(img)
+        img = np.clip(img, 0., 1.)
+        img = img.reshape(img_size + (-1,))
+        img = np.flipud(img)
 
-    within = np.ones((mat_p.shape[0],))
-    for d in [[0, 1, 2], [1, 0, 2], [2, 0, 1]]:
-        within = np.logical_and(within, same_side(d))
+        return img
 
-    dist[np.logical_not(within)] = np.inf
-    dist[dist <= 0.] = np.inf
+    def _trace_ray(self, ray_ori, ray_drt):
+        ret = self._intersect(ray_ori, ray_drt)
 
-    if (dist == np.inf).all():
-        return np.array([0., 0., 0.], dtype=np.float32)
+        if ret is None:
+            return np.array([0., 0., 0.], dtype=np.float32)
 
-    idx_min = np.argmin(dist)
+        idx, pnt_int = ret
 
-    return mat_c[idx_min, :]
+        return mat_c[idx, :]
+
+    def _intersect(self, ray_ori, ray_drt):
+        denom = np.dot(self.mat_n, ray_drt) + 1e-12
+        dist = inner1d(self.mat_p[:, 0, :].squeeze() -
+                       ray_ori, self.mat_n) / denom
+
+        pnt_int = ray_ori + dist.reshape((-1, 1)) * ray_drt
+
+        def same_side(d):
+            p2 = self.mat_p[:, d[0], :].squeeze()
+            a = self.mat_p[:, d[1], :].squeeze()
+            b = self.mat_p[:, d[2], :].squeeze()
+            cp1 = np.cross(b - a, pnt_int - a)
+            cp2 = np.cross(b - a, p2 - a)
+            return inner1d(cp1, cp2) >= 0
+
+        within = np.ones((self.mat_p.shape[0],))
+        for d in [[0, 1, 2], [1, 0, 2], [2, 0, 1]]:
+            within = np.logical_and(within, same_side(d))
+
+        dist[np.logical_not(within)] = np.inf
+        dist[dist <= 0.] = np.inf
+
+        if (dist == np.inf).all():
+            return None
+
+        idx_min = np.argmin(dist)
+
+        return idx_min, pnt_int[idx_min, :]
 
 
-def ray_cast(mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr):
-    w = 100
-    h = 100
-    img = np.zeros((w, h, 3))
+if __name__ == '__main__':
+    import sys
+    mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr = xml_read_tri(
+        sys.argv[1])
 
     mat_p = mat_p.reshape(-1, 3)
     mat_p = rotate(mat_p, np.pi * -.42, 'x')
     mat_p = rotate(mat_p, np.pi * -.55, 'z')
     mat_p = rotate(mat_p, np.pi * -.05, 'y')
     mat_p = mat_p.reshape(-1, 3, 3)
-    print(mat_p.shape)
 
     # normal vector
     mat_n = np.cross(mat_p[:, 0] - mat_p[:, 1], mat_p[:, 1] - mat_p[:, 2])
     mat_n = mat_n / np.expand_dims(np.linalg.norm(mat_n, axis=1), axis=1)
 
+    tracer = RayTracer(mat_c, mat_p, mat_n, mat_e,
+                       mat_spec, mat_refl, mat_refr)
+
+    img_size = (100, 100)
     ori = np.array([40., 0., 0.], dtype=np.float32)
     dst = np.array([20., 0., 0.], dtype=np.float32)
+    scene = (-15, -15, 10, 10)
 
-    S = (-15, -15, 10, 10)
-
-    mat_trans = np.array([20., 0., 0.])
-
-    ray_ori, ray_drt = [], []
-    for row, y in enumerate(np.linspace(S[1], S[3], h)):
-        for col, x in enumerate(np.linspace(S[0], S[2], w)):
-            dst = np.array([20., x, y])
-            drt = normalize(dst - ori)
-            ray_ori.append(dst)
-            ray_drt.append(drt)
-
-    p_trace_ray = partial(_trace_ray, mat_p=mat_p, mat_n=mat_n, mat_c=mat_c)
-    with Pool(processes=8) as pool:
-        img = pool.starmap(p_trace_ray, zip(ray_ori, ray_drt))
-
-    img = np.array(img)
-    img = np.clip(img, 0., 1.)
-    img = img.reshape((w, h, -1))
-    img = np.flipud(img)
-
-    plt.imsave('fig.png', img)
-
-
-if __name__ == '__main__':
-    import sys
-    mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr = xml_read_tri(sys.argv[1])
-    ray_cast(mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr)
+    img = tracer.trace(img_size, ori, dst, scene)
+    imsave('fig.png', img)
 
