@@ -1,9 +1,8 @@
 #!/usr/local/bin/python3
 # -*- coding: UTF-8 -*-
 
+import torch
 import numpy as np
-from multiprocessing import Pool
-from numpy.core.umath_tests import inner1d
 
 from utils import xml_read_tri
 
@@ -11,6 +10,11 @@ try:
     from scipy.misc import imsave
 except:
     from matplotlib.pyplot.plt import imsave
+
+
+def inner1d(x, y):
+    n, m = x.size()
+    return torch.bmm(x.view(n, 1, m), y.view(n, m, 1)).squeeze(2)
 
 
 def normalize(x):
@@ -39,13 +43,14 @@ def rotate(mat, rad, axis):
 
 class RayTracer(object):
     def __init__(self, mat_c, mat_p, mat_n, mat_e, mat_spec, mat_refl, mat_refr):
-        self.mat_c = mat_c
-        self.mat_p = mat_p
-        self.mat_n = mat_n
-        self.mat_e = mat_e
-        self.mat_spec = mat_spec
-        self.mat_refl = mat_refl
-        self.mat_refr = mat_refr
+        self.num_tris = mat_p.shape[0]
+        self.mat_c = torch.cuda.FloatTensor(mat_c)
+        self.mat_p = torch.cuda.FloatTensor(mat_p)
+        self.mat_n = torch.cuda.FloatTensor(mat_n)
+        self.mat_e = torch.cuda.FloatTensor(mat_e)
+        self.mat_spec = torch.cuda.FloatTensor(mat_spec)
+        self.mat_refl = torch.cuda.FloatTensor(mat_refl)
+        self.mat_refr = torch.cuda.FloatTensor(mat_refr)
 
     def trace(self, img_size, ori, dst, scene):
         img = np.zeros(img_size + (3,))
@@ -55,11 +60,10 @@ class RayTracer(object):
             for col, y in enumerate(np.linspace(scene[0], scene[2], img_size[0])):
                 dst = np.array([x_coord, y, z])
                 drt = normalize(dst - ori)
-                ray_ori.append(dst)
-                ray_drt.append(drt)
+                ray_ori.append(torch.cuda.FloatTensor(dst))
+                ray_drt.append(torch.cuda.FloatTensor(drt))
 
-        with Pool(processes=8) as pool:
-            img = pool.starmap(self._trace_ray, zip(ray_ori, ray_drt))
+        img = [self._trace_ray(ori, drt) for ori, drt in zip(ray_ori, ray_drt)]
 
         img = np.array(img)
         img = np.clip(img, 0., 1.)
@@ -76,34 +80,38 @@ class RayTracer(object):
 
         idx, pnt_int = ret
 
-        return mat_c[idx, :]
+        return self.mat_c[idx, :].cpu().numpy()
 
     def _intersect(self, ray_ori, ray_drt):
-        denom = np.dot(self.mat_n, ray_drt) + 1e-12
-        dist = inner1d(self.mat_p[:, 0, :].squeeze() -
-                       ray_ori, self.mat_n) / denom
+        ray_drt = torch.unsqueeze(ray_drt, 1)
+        denom = torch.mm(self.mat_n, ray_drt) + 1e-12
 
-        pnt_int = ray_ori + dist.reshape((-1, 1)) * ray_drt
+        dist = inner1d(self.mat_p[:, 0, :].squeeze() -
+                       ray_ori, self.mat_n)
+
+        dist /= denom
+
+        pnt_int = dist * ray_drt.t() + ray_ori
 
         def same_side(d):
             p2 = self.mat_p[:, d[0], :].squeeze()
             a = self.mat_p[:, d[1], :].squeeze()
             b = self.mat_p[:, d[2], :].squeeze()
-            cp1 = np.cross(b - a, pnt_int - a)
-            cp2 = np.cross(b - a, p2 - a)
-            return inner1d(cp1, cp2) >= 0
+            cp1 = torch.cross(b - a, pnt_int - a)
+            cp2 = torch.cross(b - a, p2 - a)
+            return (inner1d(cp1, cp2) >= 0).squeeze()
 
-        within = np.ones((self.mat_p.shape[0],))
+        within = torch.ones(self.num_tris).byte().cuda()
         for d in [[0, 1, 2], [1, 0, 2], [2, 0, 1]]:
-            within = np.logical_and(within, same_side(d))
+            within &= same_side(d)
 
-        dist[np.logical_not(within)] = np.inf
+        dist[1 - within] = np.inf
         dist[dist <= 0.] = np.inf
 
         if (dist == np.inf).all():
             return None
 
-        idx_min = np.argmin(dist)
+        _, idx_min = torch.min(dist, 0)
 
         return idx_min, pnt_int[idx_min, :]
 
