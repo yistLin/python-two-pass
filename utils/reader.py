@@ -7,6 +7,61 @@ import xml.etree.ElementTree as ET
 from utils import Triangle
 
 
+xml_tag_name = {
+    "Root": "scene",
+    "Definition": "head",
+    "Instantiate": "body",
+    "ObjectDefinition": "objectdef",
+    "Cuboid": "cuboid",
+    "Barrel": "barrel",
+    "Globe": "globe",
+    "Teapot": "teapot"
+    "TriangleSetNode": "triangleset",
+    "TriangleNode": "triangle",
+    "VertexNode": "vertex",
+    "Rotate": "rotate",
+    "Scale": "scale",
+    "Shear": "shear",
+    "Translate": "translate",
+    "Object": "object",
+    "Trianglenext": "trianglenext"
+}
+
+xml_tag_attr_name = {
+    "Name": "name",
+    "Emission": "emission",
+    "Reflectivity": "reflectivity",
+    "Radiosity": "radiosity",
+    "VertexX": "x",
+    "VertexY": "y",
+    "VertexZ": "z",
+    "TransformationX": "dx",
+    "TransformationY": "dy",
+    "TransformationZ": "dz",
+    "RotateAngle": "angle",
+    "IncludeFile": "file",
+    "Spec": "spec",
+    "Refr": "refr",
+    "Refl": "refl"
+}
+
+
+def xml_read_scene(fname):
+    # parse XML
+    tree = ET.parse(fname)
+    root = tree.getroot()
+
+    # get objects definitions & objects translation+rotation info
+    objs_root = root.find('head')
+    objs_info = root.find('body')
+
+    for obj in objs_root:
+        print('==={}==={}==='.format(obj.tag, obj.attrib['name']))
+
+        for tri in obj:
+            print(tri.tag, tri.attrib)
+
+
 def xml_read_tri(fname):
     # important info
     mat_c = []
