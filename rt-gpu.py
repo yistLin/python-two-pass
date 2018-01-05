@@ -44,13 +44,21 @@ def rotate(mat, rad, axis):
 class RayTracer(object):
     def __init__(self, mat_c, mat_p, mat_n, mat_e, mat_spec, mat_refl, mat_refr):
         self.num_tris = mat_p.shape[0]
-        self.mat_c = torch.cuda.FloatTensor(mat_c)
-        self.mat_p = torch.cuda.FloatTensor(mat_p)
-        self.mat_n = torch.cuda.FloatTensor(mat_n)
-        self.mat_e = torch.cuda.FloatTensor(mat_e)
-        self.mat_spec = torch.cuda.FloatTensor(mat_spec)
-        self.mat_refl = torch.cuda.FloatTensor(mat_refl)
-        self.mat_refr = torch.cuda.FloatTensor(mat_refr)
+        self.mat_c = torch.from_numpy(mat_c).cuda()
+        self.mat_p = torch.from_numpy(mat_p).cuda()
+        self.mat_n = torch.from_numpy(mat_n).cuda()
+        self.mat_e = torch.from_numpy(mat_e).cuda()
+        self.mat_spec = torch.from_numpy(mat_spec).cuda()
+        self.mat_refl = torch.from_numpy(mat_refl).cuda()
+        self.mat_refr = torch.from_numpy(mat_refr).cuda()
+
+        # speed up intersection test
+        self.v0 = self.mat_p[:, 2] - self.mat_p[:, 0]
+        self.v1 = self.mat_p[:, 1] - self.mat_p[:, 0]
+        self.d00 = inner1d(self.v0, self.v0)
+        self.d01 = inner1d(self.v0, self.v1)
+        self.d11 = inner1d(self.v1, self.v1)
+        self.invDenom = 1. / (self.d00 * self.d11 - self.d01 * self.d01)
 
     def trace(self, img_size, ori, dst, scene):
         img = np.zeros(img_size + (3,))
@@ -60,8 +68,8 @@ class RayTracer(object):
             for col, y in enumerate(np.linspace(scene[0], scene[2], img_size[0])):
                 dst = np.array([x_coord, y, z])
                 drt = normalize(dst - ori)
-                ray_ori.append(torch.cuda.FloatTensor(dst))
-                ray_drt.append(torch.cuda.FloatTensor(drt))
+                ray_ori.append(torch.from_numpy(dst).cuda())
+                ray_drt.append(torch.from_numpy(drt).cuda())
 
         img = [self._trace_ray(ori, drt) for ori, drt in zip(ray_ori, ray_drt)]
 
@@ -87,25 +95,21 @@ class RayTracer(object):
         denom = torch.mm(self.mat_n, ray_drt) + 1e-12
 
         dist = inner1d(self.mat_p[:, 0, :].squeeze() -
-                       ray_ori, self.mat_n)
-
-        dist /= denom
+                       ray_ori, self.mat_n) / denom
 
         pnt_int = dist * ray_drt.t() + ray_ori
 
-        def same_side(d):
-            p2 = self.mat_p[:, d[0], :].squeeze()
-            a = self.mat_p[:, d[1], :].squeeze()
-            b = self.mat_p[:, d[2], :].squeeze()
-            cp1 = torch.cross(b - a, pnt_int - a)
-            cp2 = torch.cross(b - a, p2 - a)
-            return (inner1d(cp1, cp2) >= 0).squeeze()
+        # Barycentric Technique
+        v2 = pnt_int - self.mat_p[:, 0]
+        d02 = inner1d(self.v0, v2)
+        d12 = inner1d(self.v1, v2)
+        u = (self.d11 * d02 - self.d01 * d12) * self.invDenom
+        v = (self.d00 * d12 - self.d01 * d02) * self.invDenom
 
-        within = torch.ones(self.num_tris).byte().cuda()
-        for d in [[0, 1, 2], [1, 0, 2], [2, 0, 1]]:
-            within &= same_side(d)
+        # inside triangle
+        within = (u >= 0.) & (v >= 0.) & (u + v < 1.)
 
-        dist[1 - within] = np.inf
+        dist[~within] = np.inf
         dist[dist <= 0.] = np.inf
 
         if (dist == np.inf).all():
