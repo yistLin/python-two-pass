@@ -49,6 +49,7 @@ class FormFactor(object):
 
         visibility_test = self.visibility_hemicube()
         for i, p_i in enumerate(patch_list):
+            print('[form factor] patch {}/{} ...'.format(i, patch_count))
             for j, p_j in enumerate(patch_list):
                 if i == j:
                     continue
@@ -57,7 +58,9 @@ class FormFactor(object):
                 cj = Triangle.center_of(p_j)
                 dis = Triangle.distance(ci, cj)
 
-            ffs.append(np.zeros(patch_count))
+                v_ij = Triangle.get_vector_np(cj, ci)
+
+            ffs.append(np.full(patch_count, 0.5))
 
         return ffs
 

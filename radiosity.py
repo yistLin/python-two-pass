@@ -16,7 +16,10 @@ def divide(p):
     m1 = Triangle.center(p.vertex[1], p.vertex[2])
     m2 = Triangle.center(p.vertex[2], p.vertex[0])
 
-    # Triangle()
+    to_patch_list.append(Triangle(v0=(p.vertex[0]['x'], p.vertex[0]['y'], p.vertex[0]['z']), v1=(m0['x'], m0['y'], m0['z']), v2=(m2['x'], m2['y'], m2['z']), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.append(Triangle(v0=(p.vertex[1]['x'], p.vertex[1]['y'], p.vertex[1]['z']), v1=(m1['x'], m1['y'], m1['z']), v2=(m0['x'], m0['y'], m0['z']), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.append(Triangle(v0=(p.vertex[2]['x'], p.vertex[2]['y'], p.vertex[2]['z']), v1=(m2['x'], m2['y'], m2['z']), v2=(m1['x'], m1['y'], m1['z']), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.append(Triangle(v0=(m0['x'], m0['y'], m0['z']), v1=(m1['x'], m1['y'], m1['z']), v2=(m2['x'], m2['y'], m2['z']), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
 
     return to_patch_list
 
@@ -37,33 +40,41 @@ def meshing(from_patch_list, threshold):
 
         s = (s0 + s1 + s2) / 2
 
-        area = np.sqrt(s * (s - s0) * (s - s1) * (s- s2))
-        # if area > threshold:
-        #     for d_p in divide(p)
-        #         q.put(d_p)
-        # else:
-        #     to_patch_list.append(p)
+        area = np.sqrt(s * (s - s0) * (s - s1) * (s - s2))
+        if area > threshold:
+            for d_p in divide(p):
+                q.put(d_p)
+        else:
+            to_patch_list.append(p)
 
     return to_patch_list
 
 def radiosity(args):
-    patch_list = TriangleSet().get_patches()
+    t = Triangle(v0=(0, 0, 0), v1=(100, 100, 100), v2=(0, 200, 200), emission=(1, 1, 1), reflectivity=(0.3, 0.3, 0.3), spec=1, refl=1, refr=1)
+    t2 = Triangle(v0=(0, 0, 0), v1=(100, 100, 100), v2=(0, 0, 200), spec=1, refl=1, refr=1)
+    ts = TriangleSet()
+    ts.add_triangle(t)
+    ts.add_triangle(t2)
+    patch_list = ts.get_patches()
 
-    print('{} patches'.format(len(patch_list)))
+    print('Total {} patches'.format(len(patch_list)))
     patch_list = meshing(patch_list, args.meshing_size)
-    print('{} patches'.format(len(patch_list)))
+    print('Total {} patches'.format(len(patch_list)))
 
     ffs = FormFactor(args.hemicude_edge).calculate_from_factor(patch_list)
 
+    for i, p in enumerate(patch_list):
+        patch_list[i].radiosity = patch_list[i].emission
+
     patch_count = len(patch_list)
     for step in range(args.iter_times):
+        print('step {}/{}'.format(step + 1, args.iter_times))
         b = np.array([Triangle.get_color_np(p.radiosity) for p in patch_list])
 
         for i, p in enumerate(patch_list):
-            rad = np.sum(np.multiply(ffs[i], b), axis=0)
+            rad = np.sum(np.multiply(b, ffs[i][:, np.newaxis]), axis=0)
             rad = np.multiply(rad, Triangle.get_color_np(p.reflectivity))
             rad = np.add(rad, Triangle.get_color_np(p.emission))
-
             patch_list[i].radiosity = Triangle.set_color_from_np(rad)
 
 
