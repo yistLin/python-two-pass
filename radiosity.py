@@ -47,19 +47,19 @@ def meshing(from_patch_list, threshold):
     return to_patch_list
 
 def radiosity(args):
-    patch_list = TriangleSet()
+    patch_list = TriangleSet().get_patches()
 
-    print('{} patches'.format(patch_list.count()))
+    print('{} patches'.format(len(patch_list)))
     patch_list = meshing(patch_list, args.meshing_size)
-    print('{} patches'.format(patch_list.count()))
+    print('{} patches'.format(len(patch_list)))
 
     ffs = FormFactor(args.hemicude_edge).calculate_from_factor(patch_list)
 
-    patch_count = patch_list.count()
+    patch_count = len(patch_list)
     for step in range(args.iter_times):
-        b = np.array([Triangle.get_color_np(p.radiosity) for p in patch_count])
+        b = np.array([Triangle.get_color_np(p.radiosity) for p in patch_list])
 
-        for i, p enumerate(patch_list):
+        for i, p in enumerate(patch_list):
             rad = np.sum(np.multiply(ffs[i], b), axis=0)
             rad = np.multiply(rad, Triangle.get_color_np(p.reflectivity))
             rad = np.add(rad, Triangle.get_color_np(p.emission))

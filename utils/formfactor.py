@@ -42,7 +42,7 @@ class FormFactor(object):
         self.hemicube /= np.sum(self.hemicube)
 
     def calculate_from_factor(self, patch_list):
-        patch_count = patch_list.count()
+        patch_count = len(patch_list)
         ffs = []
 
         visibility_test = self.visibility_hemicube()
@@ -55,4 +55,4 @@ class FormFactor(object):
         return ffs
 
     def visibility_hemicube(self):
-        return np.zeros((self.edge2, self.edge2), dtype=np.dtype([('p', np.int32), ('d', np.float64)]))
+        return np.full((self.edge2, self.edge2), np.inf, dtype=np.dtype([('p', np.int32), ('d', np.float64)]))

@@ -20,3 +20,6 @@ class TriangleSet(object):
 
     def count(self):
         return len(self.triangle_set)
+
+    def get_patches(self):
+        return self.triangle_set
