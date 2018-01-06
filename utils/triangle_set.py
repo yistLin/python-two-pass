@@ -18,5 +18,5 @@ class TriangleSet(object):
         for t in tset.triangle_set:
             self.triangle_set.append(t)
 
-    def count():
+    def count(self):
         return len(self.triangle_set)
