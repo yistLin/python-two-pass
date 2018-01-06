@@ -84,10 +84,11 @@ class Triangle(object):
         return Triangle.Vertex(float(x), float(y), float(z))
 
     @staticmethod
-    def get_normal_vector_np(v1, v2, v3):
+    def get_normal_vector_np(t):
+        v1 = t.vertex[0]
+        v2 = t.vertex[1]
+        v3 = t.vertex[2]
         u = Triangle.get_vector_np(v2, v1)
         v = Triangle.get_vector_np(v3, v1)
         vec = np.cross(u, v)
-        vec_length = np.sqrt(vec[0]**2 + vec[1]**2 + vec[2]**2)
-        vec /= vec_length
-        return Triangle.Vertex(float(x), float(y), float(z))
+        return np.multiply(vec, 1 / np.linalg.norm(vec))
