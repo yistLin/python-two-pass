@@ -7,17 +7,19 @@ import numpy as np
 class Triangle(object):
     """docstring for Triangle"""
 
-    def __init__(self):
-        self.vertex = [Triangle.Vertex(0., 0., 0.),
-                       Triangle.Vertex(0., 0., 0.),
-                       Triangle.Vertex(0., 0., 0.)]
-        self.emission = Triangle.Color(0., 0., 0.)
-        self.reflectivity = Triangle.Color(0., 0., 0.)
-        self.radiosity = Triangle.Color(0., 0., 0.)
-        self.radiosity_last = Triangle.Color(0., 0., 0.)
-        self.spec = 0.
-        self.refl = 0.
-        self.refr = 0.
+    def __init__(self, **kwargs):
+        self.vertex = [Triangle.Vertex(*kwargs.get('v0', (0., 0., 0.))),
+                       Triangle.Vertex(*kwargs.get('v1', (0., 0., 0.))),
+                       Triangle.Vertex(*kwargs.get('v2', (0., 0., 0.)))]
+        self.emission = Triangle.Color(*kwargs.get('emission', (0., 0., 0.)))
+        self.reflectivity = Triangle.Color(
+            *kwargs.get('reflectivity', (0., 0., 0.)))
+        self.radiosity = Triangle.Color(*kwargs.get('radiosity', (0., 0., 0.)))
+        self.radiosity_last = Triangle.Color(
+            *kwargs.get('radiosity_last', (0., 0., 0.)))
+        self.spec = kwargs.get('spec', 0.)
+        self.refl = kwargs.get('refl', 0.)
+        self.refr = kwargs.get('refr', 0.)
 
     def print_attr(self):
         print("Vertex: ({}, {}, {}), ({}, {}, {}), ({}, {}, {})".format(
@@ -32,8 +34,8 @@ class Triangle(object):
             self.spec, self.refl, self.refr))
 
     @staticmethod
-    def Vertex(ix=0., iy=0., iz=0.):
-        return {'x': ix, 'y': iy, 'z': iz}
+    def Vertex(x=0., y=0., z=0.):
+        return {'x': x, 'y': y, 'z': z}
 
     @staticmethod
     def get_vertex_np(v):
@@ -83,8 +85,8 @@ class Triangle(object):
 
     @staticmethod
     def get_normal_vector_np(v1, v2, v3):
-        u = get_vector_np(v2, v1)
-        v = get_vector_np(v3, v1)
+        u = Triangle.get_vector_np(v2, v1)
+        v = Triangle.get_vector_np(v3, v1)
         vec = np.cross(u, v)
         vec_length = np.sqrt(vec[0]**2 + vec[1]**2 + vec[2]**2)
         vec /= vec_length
