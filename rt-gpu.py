@@ -44,13 +44,13 @@ def rotate(mat, rad, axis):
 class RayTracer(object):
     def __init__(self, mat_c, mat_p, mat_n, mat_e, mat_spec, mat_refl, mat_refr):
         self.num_tris = mat_p.shape[0]
-        self.mat_c = torch.from_numpy(mat_c).cuda()
-        self.mat_p = torch.from_numpy(mat_p).cuda()
-        self.mat_n = torch.from_numpy(mat_n).cuda()
-        self.mat_e = torch.from_numpy(mat_e).cuda()
-        self.mat_spec = torch.from_numpy(mat_spec).cuda()
-        self.mat_refl = torch.from_numpy(mat_refl).cuda()
-        self.mat_refr = torch.from_numpy(mat_refr).cuda()
+        self.mat_c = torch.cuda.FloatTensor(mat_c)
+        self.mat_p = torch.cuda.FloatTensor(mat_p)
+        self.mat_n = torch.cuda.FloatTensor(mat_n)
+        self.mat_e = torch.cuda.FloatTensor(mat_e)
+        self.mat_spec = torch.cuda.FloatTensor(mat_spec)
+        self.mat_refl = torch.cuda.FloatTensor(mat_refl)
+        self.mat_refr = torch.cuda.FloatTensor(mat_refr)
 
         # speed up intersection test
         self.v0 = self.mat_p[:, 2] - self.mat_p[:, 0]
@@ -68,8 +68,8 @@ class RayTracer(object):
             for col, y in enumerate(np.linspace(scene[0], scene[2], img_size[0])):
                 dst = np.array([x_coord, y, z])
                 drt = normalize(dst - ori)
-                ray_ori.append(torch.from_numpy(dst).cuda())
-                ray_drt.append(torch.from_numpy(drt).cuda())
+                ray_ori.append(torch.cuda.FloatTensor(dst))
+                ray_drt.append(torch.cuda.FloatTensor(drt))
 
         img = [self._trace_ray(ori, drt) for ori, drt in zip(ray_ori, ray_drt)]
 
