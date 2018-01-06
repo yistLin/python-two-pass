@@ -4,50 +4,41 @@
 import numpy as np
 
 class Triangle(object):
-    def __init__(self, a, b, c, fcolor, bcolor):
-        assert len(a) == 3 and len(b) == 3 and len(c) == 3 and \
-               len(fcolor) == 3 and len(bcolor) == 3
+    """docstring for Triangle"""
+    def __init__(self):
+        self.vertex = [Triangle.Vertex(0., 0., 0.),
+                       Triangle.Vertex(0., 0., 0.),
+                       Triangle.Vertex(0., 0., 0.)]
+        self.emission = Triangle.Color(0., 0., 0.)
+        self.reflectivity = Triangle.Color(0., 0., 0.)
+        self.radiosity = Triangle.Color(0., 0., 0.)
+        self.radiosity_last = Triangle.Color(0., 0., 0.)
+        self.spec = 0.
+        self.refl = 0.
+        self.refr = 0.
 
-        # 3 points
-        self.p = np.array([a, b, c], dtype=np.float32)
+    def print_attr(self):
+        print("Vertex: ({}, {}, {}), ({}, {}, {}), ({}, {}, {})".format(
+            self.vertex[0]['x'], self.vertex[0]['y'], self.vertex[0]['z'],
+            self.vertex[1]['x'], self.vertex[1]['y'], self.vertex[1]['z'],
+            self.vertex[2]['x'], self.vertex[2]['y'], self.vertex[2]['z']))
+        print("Emission: {}".format(self.emission))
+        print("Reflectivity: {}".format(self.reflectivity))
+        print("Radiosity: {}".format(self.radiosity))
+        print("RadiosityLast: {}".format(self.radiosity_last))
+        print("spec: {}, refl: {}, refr: {}".format(self.spec, self.refl, self.refr))
 
-        # front and back colors
-        self.fcolor = np.array(fcolor, dtype=int)
-        self.bcolor = np.array(bcolor, dtype=int)
+    @staticmethod
+    def Vertex(ix=0., iy=0., iz=0.):
+        return {'x': ix, 'y': iy, 'z': iz}
 
-        # normal vector
-        self.n = np.cross(self.p[0]-self.p[1], self.p[1]-self.p[2])
-        self.n = self.n / np.linalg.norm(self.n)
+    @staticmethod
+    def Color(r=0., g=0., b=0.):
+        return {'r': r, 'g': g, 'b': b}
 
-    def intersect(self, ray_ori, ray_drt):
-        denom = np.dot(ray_drt, self.n)
-
-        # ignore if the angle between ray and plane is too small
-        if np.abs(denom) < 1e-6:
-            return np.inf, None
-
-        # distance to the plane
-        dist = np.dot(self.p[0] - ray_ori, self.n) / denom
-        if dist < 0:
-            return np.inf, None
-
-        # intersection point on the plane
-        pnt_int = ray_ori + dist * ray_drt
-
-        # intersection point within triangle or not
-        if not self._within(pnt_int):
-            return np.inf, None
-
-        return dist, pnt_int
-
-    def _within(self, p):
-
-        def same_side(p1, p2, a, b):
-            cp1 = np.cross(b-a, p1-a)
-            cp2 = np.cross(b-a, p2-a)
-            return np.dot(cp1, cp2) >= 0
-
-        return same_side(p, self.p[0], self.p[1], self.p[2]) and \
-               same_side(p, self.p[1], self.p[0], self.p[2]) and \
-               same_side(p, self.p[2], self.p[0], self.p[1])
-
+    @staticmethod
+    def center_of(t):
+        x = (t.vertex[0]['x'] + t.vertex[1]['x'] + t.vertex[2]['x']) / 3
+        y = (t.vertex[0]['y'] + t.vertex[1]['y'] + t.vertex[2]['y']) / 3
+        z = (t.vertex[0]['z'] + t.vertex[1]['z'] + t.vertex[2]['z']) / 3
+        return Triangle.Vertex(float(x), float(y), float(z))
