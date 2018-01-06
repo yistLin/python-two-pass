@@ -1,8 +1,6 @@
 #!/usr/local/bin/python3
 # -*- coding: UTF-8 -*-
 
-import math
-
 import numpy as np
 
 class FormFactor(object):
@@ -38,16 +36,23 @@ class FormFactor(object):
                         z = 2 - y
                         y = 1.0
 
-                    self.hemicube[i][j] = z / (math.pi * (x**2 + y**2 + z**2)) / self.surface_area
+                    self.hemicube[i][j] = z / (np.pi * (x**2 + y**2 + z**2)) / self.surface_area
 
         # normalization
         self.hemicube /= np.sum(self.hemicube)
 
     def calculate_from_factor(self, patch_list):
-        patch_count = len(patch_list)
+        patch_count = patch_list.count()
+        ffs = []
 
+        visibility_test = self.visibility_hemicube()
         for i, p_i in enumerate(patch_list):
-            ff = np.zeros(patch_count)
             for j, p_j in enumerate(patch_list):
                 if i == j:
                     continue
+            ffs.append(np.zeros(patch_count))
+
+        return ffs
+
+    def visibility_hemicube(self):
+        return np.zeros((self.edge2, self.edge2), dtype=np.dtype([('p', np.int32), ('d', np.float64)]))

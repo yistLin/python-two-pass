@@ -7,9 +7,16 @@ import queue
 import numpy as np
 
 from utils import FormFactor
+from utils import TriangleSet, Triangle
 
-def divide():
+def divide(p):
     to_patch_list = []
+
+    m0 = Triangle.center(p.vertex[0], p.vertex[1])
+    m1 = Triangle.center(p.vertex[1], p.vertex[2])
+    m2 = Triangle.center(p.vertex[2], p.vertex[0])
+
+    # Triangle()
 
     return to_patch_list
 
@@ -24,7 +31,13 @@ def meshing(from_patch_list, threshold):
     while not q.empty():
         p = q.get()
 
-        # area =
+        s0 = Triangle.distance(p.vertex[0], p.vertex[1])
+        s1 = Triangle.distance(p.vertex[1], p.vertex[2])
+        s2 = Triangle.distance(p.vertex[2], p.vertex[0])
+
+        s = (s0 + s1 + s2) / 2
+
+        area = np.sqrt(s * (s - s0) * (s - s1) * (s- s2))
         # if area > threshold:
         #     for d_p in divide(p)
         #         q.put(d_p)
@@ -34,25 +47,24 @@ def meshing(from_patch_list, threshold):
     return to_patch_list
 
 def radiosity(args):
-    patch_list = []
+    patch_list = TriangleSet()
 
-    print('{} patches'.format(len(patch_list)))
+    print('{} patches'.format(patch_list.count()))
     patch_list = meshing(patch_list, args.meshing_size)
-    print('{} patches'.format(len(patch_list)))
+    print('{} patches'.format(patch_list.count()))
 
-    FormFactor(args.hemicude_edge).calculate_from_factor(patch_list)
+    ffs = FormFactor(args.hemicude_edge).calculate_from_factor(patch_list)
 
-    patch_count = len(patch_list)
-    for i in range(args.iter_times):
-        b = np.zeros(patch_count)
+    patch_count = patch_list.count()
+    for step in range(args.iter_times):
+        b = np.array([Triangle.get_color_np(p.radiosity) for p in patch_count])
 
-        for i, p in enumerate(patch_list):
-            b[i] = p.rad
+        for i, p enumerate(patch_list):
+            rad = np.sum(np.multiply(ffs[i], b), axis=0)
+            rad = np.multiply(rad, Triangle.get_color_np(p.reflectivity))
+            rad = np.add(rad, Triangle.get_color_np(p.emission))
 
-        for p in patch_list:
-            rad = np.dot(p.ff, b)
-            rad *= p.refl
-            rad += p.emission
+            # patch_list[i].set radiosity
 
 
 if __name__ == '__main__':
