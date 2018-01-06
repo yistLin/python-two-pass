@@ -48,6 +48,10 @@ class Triangle(object):
         return np.array([c['r'], c['g'], c['b']])
 
     @staticmethod
+    def set_color_from_np(nparray):
+        return Triangle.Color(nparray[0], nparray[1], nparray[2])
+
+    @staticmethod
     def Vector(ix=0., iy=0., iz=0.):
         return {'dx': ix, 'dy': iy, 'dz': iz}
 
