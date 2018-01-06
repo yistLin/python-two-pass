@@ -64,7 +64,7 @@ def radiosity(args):
             rad = np.multiply(rad, Triangle.get_color_np(p.reflectivity))
             rad = np.add(rad, Triangle.get_color_np(p.emission))
 
-            # patch_list[i].set radiosity
+            patch_list[i].radiosity = Triangle.set_color_from_np(rad)
 
 
 if __name__ == '__main__':

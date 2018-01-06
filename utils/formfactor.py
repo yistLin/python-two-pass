@@ -3,6 +3,8 @@
 
 import numpy as np
 
+from utils.triangle import Triangle
+
 class FormFactor(object):
     def __init__(self, edge):
         assert edge > 0
@@ -50,6 +52,11 @@ class FormFactor(object):
             for j, p_j in enumerate(patch_list):
                 if i == j:
                     continue
+
+                ci = Triangle.center_of(p_i)
+                cj = Triangle.center_of(p_j)
+                dis = Triangle.distance(ci, cj)
+
             ffs.append(np.zeros(patch_count))
 
         return ffs
