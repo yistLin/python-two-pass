@@ -15,7 +15,7 @@ xml_tag_name = {
     "Cuboid": "cuboid",
     "Barrel": "barrel",
     "Globe": "globe",
-    "Teapot": "teapot"
+    "Teapot": "teapot",
     "TriangleSetNode": "triangleset",
     "TriangleNode": "triangle",
     "VertexNode": "vertex",
@@ -47,6 +47,20 @@ xml_tag_attr_name = {
 
 
 def xml_read_scene(fname):
+    def read_root(objs_root):
+        for obj in objs_root:
+            print('==={}==={}==='.format(obj.tag, obj.attrib['name']))
+
+            for tri in obj:
+                print(tri.tag, tri.attrib)
+
+    def read_info(objs_info):
+        for obj in objs_info:
+            print('==={}==={}==='.format(obj.tag, obj.attrib))
+
+            for tri in obj:
+                print(tri.tag, tri.attrib)
+
     # parse XML
     tree = ET.parse(fname)
     root = tree.getroot()
@@ -55,11 +69,8 @@ def xml_read_scene(fname):
     objs_root = root.find('head')
     objs_info = root.find('body')
 
-    for obj in objs_root:
-        print('==={}==={}==='.format(obj.tag, obj.attrib['name']))
-
-        for tri in obj:
-            print(tri.tag, tri.attrib)
+    read_root(objs_root)
+    #read_info(objs_info)
 
 
 def xml_read_tri(fname):
