@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import numpy as np
+from itertools import repeat
 from multiprocessing import Pool
 from numpy.core.umath_tests import inner1d
 
@@ -39,7 +40,7 @@ def rotate(mat, rad, axis):
 
 class RayTracer(object):
     def __init__(self, mat_c, mat_p, mat_n, mat_e, mat_spec, mat_refl, mat_refr):
-        self.mat_c = mat_c
+        self.mat_c = np.clip(mat_c, 0., 1.)
         self.mat_p = mat_p
         self.mat_n = mat_n
         self.mat_e = mat_e
@@ -55,7 +56,7 @@ class RayTracer(object):
         self.d11 = inner1d(self.v1, self.v1)
         self.invDenom = 1. / (self.d00 * self.d11 - self.d01 * self.d01)
 
-    def trace(self, img_size, ori, dst, scene):
+    def trace(self, img_size, ori, dst, scene, max_depth=3):
         img = np.zeros(img_size + (3,))
         x_coord = dst[0]
         ray_ori, ray_drt = [], []
@@ -67,7 +68,7 @@ class RayTracer(object):
                 ray_drt.append(drt)
 
         with Pool(processes=4) as pool:
-            img = pool.starmap(self._trace_ray, zip(ray_ori, ray_drt))
+            img = pool.starmap(self._trace_ray, zip(ray_ori, ray_drt, repeat(max_depth)))
 
         img = np.array(img)
         img = np.clip(img, 0., 1.)
@@ -76,7 +77,7 @@ class RayTracer(object):
 
         return img
 
-    def _trace_ray(self, ray_ori, ray_drt):
+    def _trace_ray(self, ray_ori, ray_drt, depth):
         ret = self._intersect(ray_ori, ray_drt)
 
         if ret is None:
@@ -84,7 +85,16 @@ class RayTracer(object):
 
         idx, pnt_int = ret
 
-        return mat_c[idx, :]
+        color = self.mat_c[idx, :]
+
+        if depth > 1:
+            new_ray_drt = normalize(ray_drt - 2 * np.dot(ray_drt, self.mat_n[idx, :]) * self.mat_n[idx, :])
+            new_ray_ori = pnt_int + 1e-3 * new_ray_drt
+            rtn_color = self._trace_ray(new_ray_ori, new_ray_drt, depth - 1)
+
+            color = color + 0.2 * rtn_color
+
+        return color
 
     def _intersect(self, ray_ori, ray_drt):
         denom = np.dot(self.mat_n, ray_drt) + 1e-12
@@ -101,10 +111,7 @@ class RayTracer(object):
         v = (self.d00 * d12 - self.d01 * d02) * self.invDenom
 
         # inside triangle
-        within = (u >= 0.) & (v >= 0.) & (u + v < 1.)
-
-        dist[~within] = np.inf
-        dist[dist <= 0.] = np.inf
+        dist[~((u >= 0.) & (v >= 0.) & (u + v < 1.)) | (dist <= 0.)] = np.inf
 
         if (dist == np.inf).all():
             return None
@@ -137,6 +144,6 @@ if __name__ == '__main__':
     dst = np.array([20., 0., 0.], dtype=np.float32)
     scene = (-15, -15, 10, 10)
 
-    img = tracer.trace(img_size, ori, dst, scene)
+    img = tracer.trace(img_size, ori, dst, scene, max_depth=3)
     imsave('fig.png', img)
 
