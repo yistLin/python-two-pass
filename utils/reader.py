@@ -4,7 +4,7 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 
-from utils import Triangle
+from utils.triangle import Triangle
 
 
 xml_tag_name = {
@@ -70,7 +70,7 @@ def xml_read_scene(fname):
     objs_info = root.find('body')
 
     read_root(objs_root)
-    #read_info(objs_info)
+    # read_info(objs_info)
 
 
 def xml_read_tri(fname):
@@ -114,11 +114,11 @@ def xml_read_tri(fname):
             mat_p.append(vertices)
 
     return np.array(mat_c, dtype=np.float32), \
-           np.array(mat_p, dtype=np.float32), \
-           np.array(mat_e, dtype=np.float32), \
-           np.array(mat_spec, dtype=np.float32), \
-           np.array(mat_refl, dtype=np.float32), \
-           np.array(mat_refr, dtype=np.float32)
+        np.array(mat_p, dtype=np.float32), \
+        np.array(mat_e, dtype=np.float32), \
+        np.array(mat_spec, dtype=np.float32), \
+        np.array(mat_refl, dtype=np.float32), \
+        np.array(mat_refr, dtype=np.float32)
 
 
 def read_tri(fname):
@@ -145,4 +145,3 @@ if __name__ == '__main__':
 
     for tri in tris:
         print(tri.fcolor, tri.n)
-
