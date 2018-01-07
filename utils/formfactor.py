@@ -56,9 +56,27 @@ class FormFactor(object):
 
                 ci = Triangle.center_of(p_i)
                 cj = Triangle.center_of(p_j)
-                dis = Triangle.distance(ci, cj)
 
                 v_ij = Triangle.get_vector_np(cj, ci)
+                n = Triangle.get_normal_vector_np(p_i)
+                if np.dot(v_ij, n) <= 0:
+                    continue
+
+                transform = self.get_transform_matrix(p_i)
+
+                v0 = np.dot(transform, Triangle.get_vector_np(p_j.vertex[0], ci))
+                v1 = np.dot(transform, Triangle.get_vector_np(p_j.vertex[1], ci))
+                v2 = np.dot(transform, Triangle.get_vector_np(p_j.vertex[2], ci))
+
+                print(v0, v1, v2)
+
+                v0 = np.multiply(v0, 1 / v0[2])
+                v1 = np.multiply(v1, 1 / v1[2])
+                v2 = np.multiply(v2, 1 / v2[2])
+
+                print(v0, v1, v2)
+                # dis = Triangle.distance(ci, cj)
+
 
             ffs.append(np.full(patch_count, 0.5))
 
@@ -66,3 +84,32 @@ class FormFactor(object):
 
     def visibility_hemicube(self):
         return np.full((self.edge2, self.edge2), np.inf, dtype=np.dtype([('p', np.int32), ('d', np.float64)]))
+
+    def get_transform_matrix(self, p):
+        c = Triangle.center_of(p)
+        x = Triangle.get_vector_np(p.vertex[0], c)
+        x = np.multiply(x, 1 / np.linalg.norm(x))
+        z = Triangle.get_normal_vector_np(p)
+        y = np.cross(z, x)
+
+        cos_beta = z[2]
+        sin_beta = np.sqrt(1 - cos_beta**2)
+
+        cos_alpha = -z[1] / sin_beta
+        sin_alpha = z[0] / sin_beta
+
+        cos_gamma = y[2] / cos_beta
+        sin_gamma = x[2] / cos_beta
+
+        ty = np.array([[cos_gamma, sin_gamma, 0],
+                        [-sin_gamma, cos_gamma, 0],
+                        [0, 0, 1]])
+        tx = np.array([[1, 0, 0],
+                        [0, cos_beta, sin_beta],
+                        [0, -sin_beta, cos_beta]])
+        tz = np.array([[cos_alpha, sin_alpha, 0],
+                        [-sin_alpha, cos_alpha, 0],
+                        [0, 0, 1]])
+
+        transform = np.dot(ty, tx)
+        return np.dot(transform, tz)
