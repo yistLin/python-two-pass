@@ -48,6 +48,26 @@ class RayTracer(object):
         self.mat_refl = mat_refl
         self.mat_refr = mat_refr
 
+        # vertex color = averaged color of neighboring triangles
+        vtx_dict = {}
+        mat_p_rnd = np.around(mat_p, 4)
+        for i, (tri, clr) in enumerate(zip(mat_p_rnd.tolist(), self.mat_c)):
+            for j, pnt in enumerate(tri):
+                key = tuple(pnt)
+                if key not in vtx_dict:
+                    vtx_dict[key] = [clr, 1, (i, j)]
+                else:
+                    vtx_clr = vtx_dict[key][0]
+                    vtx_cnt = vtx_dict[key][1]
+                    vtx_dict[key][0] = vtx_clr * (vtx_cnt / (vtx_cnt+1)) + clr * (1 / (vtx_cnt+1))
+                    vtx_dict[key][1] = vtx_cnt + 1
+                    vtx_dict[key].append((i, j))
+        self.mat_vtx_c = np.empty(mat_p.shape, dtype=np.float32)
+        for key, val in vtx_dict.items():
+            vtx_clr = val[0]
+            for i, j in val[2:]:
+                self.mat_vtx_c[i, j, :] = vtx_clr
+
         # speed up intersection test
         self.v0 = self.mat_p[:, 2] - self.mat_p[:, 0]
         self.v1 = self.mat_p[:, 1] - self.mat_p[:, 0]
@@ -83,9 +103,12 @@ class RayTracer(object):
         if ret is None:
             return np.array([0., 0., 0.], dtype=np.float32)
 
-        idx, pnt_int = ret
+        idx, pnt_int, (u, v) = ret
 
-        color = self.mat_c[idx, :]
+        # vertice color interpolation
+        tri_int = self.mat_vtx_c[idx]
+        color = (1. - u - v) * tri_int[0] + v * tri_int[1] + u * tri_int[2]
+
         refl_int = self.mat_refl[idx]
 
         if depth > 1 and refl * refl_int > 0.01:
@@ -119,7 +142,7 @@ class RayTracer(object):
 
         idx_min = np.argmin(dist)
 
-        return idx_min, pnt_int[idx_min, :]
+        return idx_min, pnt_int[idx_min, :], (u[idx_min], v[idx_min])
 
 
 if __name__ == '__main__':
