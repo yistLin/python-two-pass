@@ -51,7 +51,8 @@ def meshing(from_patch_list, threshold):
 
 def radiosity(args):
     t = Triangle(v0=(0, 0, 0), v1=(100, 100, 100), v2=(0, 200, 200), emission=(1, 1, 1), reflectivity=(0.3, 0.3, 0.3), spec=1, refl=1, refr=1)
-    t2 = Triangle(v0=(0, 0, 0), v1=(100, 100, 100), v2=(0, 0, 200), spec=1, refl=1, refr=1)
+    # t2 = Triangle(v0=(0, 0, 0), v1=(100, 100, 100), v2=(0, 0, 200), spec=1, refl=1, refr=1)
+    t2 = Triangle(v0=(0, 0, 0), v1=(0, 0, 200), v2=(100, 100, 100), spec=1, refl=1, refr=1)
     ts = TriangleSet()
     ts.add_triangle(t)
     ts.add_triangle(t2)

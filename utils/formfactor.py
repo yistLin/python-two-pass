@@ -16,7 +16,7 @@ class FormFactor(object):
         self.edge3_2 = edge * 3 / 2
         self.surface_area = self.edge**2 + 4 * self.edge * self.edge1_2
 
-        self.hemicube = np.zeros((self.edge2, self.edge2))
+        self.delta_formfactor = np.zeros((self.edge2, self.edge2))
 
         for i in range(self.edge2):
             for j in range(self.edge2):
@@ -38,18 +38,19 @@ class FormFactor(object):
                         z = 2 - y
                         y = 1.0
 
-                    self.hemicube[i][j] = z / (np.pi * (x**2 + y**2 + z**2)) / self.surface_area
+                    self.delta_formfactor[i][j] = z / (np.pi * (x**2 + y**2 + z**2)) / self.surface_area
 
         # normalization
-        self.hemicube /= np.sum(self.hemicube)
+        self.delta_formfactor /= np.sum(self.delta_formfactor)
 
     def calculate_from_factor(self, patch_list):
         patch_count = len(patch_list)
         ffs = []
 
-        visibility_test = self.visibility_hemicube()
         for i, p_i in enumerate(patch_list):
             print('[form factor] patch {}/{} ...'.format(i, patch_count))
+
+            visibility_test = self.visibility_hemicube()
             for j, p_j in enumerate(patch_list):
                 if i == j:
                     continue
@@ -68,17 +69,30 @@ class FormFactor(object):
                 v1 = np.dot(transform, Triangle.get_vector_np(p_j.vertex[1], ci))
                 v2 = np.dot(transform, Triangle.get_vector_np(p_j.vertex[2], ci))
 
-                print(v0, v1, v2)
+                print('original v0, v1, v2\n', v0, v1, v2)
 
-                v0 = np.multiply(v0, 1 / v0[2])
-                v1 = np.multiply(v1, 1 / v1[2])
-                v2 = np.multiply(v2, 1 / v2[2])
+                v0 = self.project(v0)
+                v1 = self.project(v1)
+                v2 = self.project(v2)
 
-                print(v0, v1, v2)
-                # dis = Triangle.distance(ci, cj)
+                print('transformed v0, v1, v2\n', v0, v1, v2)
 
+                distance = Triangle.distance(ci, cj)
+                for x in range(self.edge2):
+                    for y in range(self.edge2):
+                        if self.check_inside((x + 0.5, y + 0.5), v0, v1, v2):
+                            if visibility_test[x][y][1] > distance:
+                                visibility_test[x][y][0] = j
+                                visibility_test[x][y][1] = distance
 
-            ffs.append(np.full(patch_count, 0.5))
+            ff = np.zeros(patch_count)
+            for x in range(self.edge2):
+                for y in range(self.edge2):
+                    j = visibility_test[x][y][0]
+                    if 0 <= j < patch_count:
+                        ff[j] += self.delta_formfactor[x][y]
+            print('ff', ff)
+            ffs.append(ff)
 
         return ffs
 
@@ -101,15 +115,81 @@ class FormFactor(object):
         cos_gamma = y[2] / cos_beta
         sin_gamma = x[2] / cos_beta
 
-        ty = np.array([[cos_gamma, sin_gamma, 0],
+        t_gamma = np.array([[cos_gamma, sin_gamma, 0],
                         [-sin_gamma, cos_gamma, 0],
                         [0, 0, 1]])
-        tx = np.array([[1, 0, 0],
+        t_beta = np.array([[1, 0, 0],
                         [0, cos_beta, sin_beta],
                         [0, -sin_beta, cos_beta]])
-        tz = np.array([[cos_alpha, sin_alpha, 0],
+        t_alpha = np.array([[cos_alpha, sin_alpha, 0],
                         [-sin_alpha, cos_alpha, 0],
                         [0, 0, 1]])
 
-        transform = np.dot(ty, tx)
-        return np.dot(transform, tz)
+        transform = np.dot(t_gamma, t_beta)
+        return np.dot(transform, t_alpha)
+
+    def project(self, v):
+        x = v[0]
+        y = v[1]
+        z = v[2]
+
+        # side: right = 0, up = 1, left = 2, down = 3
+        side = -1
+        if x >= 0 and y >= 0:
+            if x > y:
+                side = 0
+            else:
+                side = 1
+        elif x < 0 and y >= 0:
+            if -x > y:
+                side = 2
+            else:
+                side = 1
+        elif x < 0 and y < 0:
+            if -x > -y:
+                side = 2
+            else:
+                side = 3
+        else:
+            if x > -y:
+                side = 0
+            else:
+                side = 3
+
+        xy = np.sqrt(x**2 + y**2)
+        theta = np.arctan(z / xy)
+        if side == 0:
+            if theta >= np.arctan(1 / np.sqrt((y / x)**2 + 1)):
+                return self.edge - self.edge1_2 * (y / np.abs(z)), self.edge + self.edge1_2 * (x / np.abs(z))
+            else:
+                return self.edge - self.edge1_2 * (y / np.abs(x)), self.edge2 - self.edge1_2 * (z / np.abs(x))
+        elif side == 1:
+            if theta >= np.arctan(1 / np.sqrt((x / y)**2 + 1)):
+                return self.edge - self.edge1_2 * (y / np.abs(z)), self.edge + self.edge1_2 * (x / np.abs(z))
+            else:
+                return self.edge1_2 * (z / np.abs(y)), self.edge + self.edge1_2 * (x / np.abs(y))
+        elif side == 2:
+            if theta >= np.arctan(1 / np.sqrt((y / x)**2 + 1)):
+                return self.edge - self.edge1_2 * (y / np.abs(z)), self.edge + self.edge1_2 * (x / np.abs(z))
+            else:
+                return self.edge - self.edge1_2 * (y / np.abs(x)), self.edge1_2 * (z / np.abs(x))
+        else:
+            if theta >= np.arctan(1 / np.sqrt((x / y)**2 + 1)):
+                return self.edge - self.edge1_2 * (y / np.abs(z)), self.edge + self.edge1_2 * (x / np.abs(z))
+            else:
+                return self.edge2 - self.edge1_2 * (z / np.abs(y)), self.edge + self.edge1_2 * (x / np.abs(y))
+
+    def check_inside(self, v, v0, v1, v2):
+        vec0 = np.array([v0[0] - v[0], v0[1] - v[1]])
+        vec1 = np.array([v1[0] - v[0], v1[1] - v[1]])
+        vec2 = np.array([v2[0] - v[0], v2[1] - v[1]])
+
+        c0 = np.cross(vec0, vec1)
+        c1 = np.cross(vec1, vec2)
+        c2 = np.cross(vec2, vec0)
+
+        if np.dot(c0, c1) < 0:
+            return False
+        if np.dot(c1, c2) < 0:
+            return False
+        return True
