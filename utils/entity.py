@@ -1,8 +1,11 @@
 #!/usr/local/bin/python3
 # -*- coding: UTF-8 -*-
 
+import sys
 import numpy as np
 from utils.triangle import Triangle
+from utils.triangle_set import TriangleSet
+from utils.transform_matrix import TransformMatrix
 
 
 class Entity(object):
@@ -19,12 +22,34 @@ class Entity(object):
         self._refl = refl
         self._refr = refr
 
-        self.transform_matrix = None
-        self.triangle_set = []
+        self.transform_matrix = TransformMatrix()
+        self.triangle_set = TriangleSet()
         self.name = "entity"
 
-    def create(self, xml_node):
-        node_name = xml_node.name
+    @staticmethod
+    def create(entity_name, list_of_args):
+        if entity_name == 'barrel':
+            pass
+        elif entity_name == 'cuboid':
+            pass
+        elif entity_name == 'globe':
+            pass
+        elif entity_name == 'teapot':
+            pass
+        elif entity_name == 'triangleset':
+            pass
+        else:
+            print("There's no such object name {}!!!".format(obj_name))
+            sys.exit(-1)
+
+    def set_triangle_properties(self, t):
+        t.emission = self.emission
+        t.reflectivity = self.reflectivity
+        t.radiosity = self.radiosity
+
+        t._spec = self._spec
+        t._refl = self._refl
+        t._refr = self._refr
 
 
 class Barrel(Entity):
