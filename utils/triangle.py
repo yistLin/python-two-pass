@@ -21,17 +21,22 @@ class Triangle(object):
         self.refl = kwargs.get('refl', 0.)
         self.refr = kwargs.get('refr', 0.)
 
-    def print_attr(self):
-        print("Vertex: ({}, {}, {}), ({}, {}, {}), ({}, {}, {})".format(
+    def __repr__(self):
+        ret = []
+        ret.append("Vertex: ({}, {}, {}), ({}, {}, {}), ({}, {}, {})".format(
             self.vertex[0]['x'], self.vertex[0]['y'], self.vertex[0]['z'],
             self.vertex[1]['x'], self.vertex[1]['y'], self.vertex[1]['z'],
             self.vertex[2]['x'], self.vertex[2]['y'], self.vertex[2]['z']))
-        print("Emission: {}".format(self.emission))
-        print("Reflectivity: {}".format(self.reflectivity))
-        print("Radiosity: {}".format(self.radiosity))
-        print("RadiosityLast: {}".format(self.radiosity_last))
-        print("spec: {}, refl: {}, refr: {}".format(
+        ret.append("Emission: {}".format(tuple(self.emission.values())))
+        ret.append("Reflectivity: {}".format(
+            tuple(self.reflectivity.values())))
+        ret.append("Radiosity: {}".format(tuple(self.radiosity.values())))
+        ret.append("RadiosityLast: {}".format(
+            tuple(self.radiosity_last.values())))
+        ret.append("spec: {}, refl: {}, refr: {}".format(
             self.spec, self.refl, self.refr))
+
+        return '\n'.join(ret)
 
     @staticmethod
     def Vertex(x=0., y=0., z=0.):
