@@ -65,9 +65,9 @@ class FormFactor(object):
 
                 transform = self.get_transform_matrix(p_i)
 
-                v0 = np.dot(transform, Triangle.get_vector_np(p_j.vertex[0], ci))
-                v1 = np.dot(transform, Triangle.get_vector_np(p_j.vertex[1], ci))
-                v2 = np.dot(transform, Triangle.get_vector_np(p_j.vertex[2], ci))
+                v0 = np.dot(Triangle.get_vector_np(p_j.vertex[0], ci), transform)
+                v1 = np.dot(Triangle.get_vector_np(p_j.vertex[1], ci), transform)
+                v2 = np.dot(Triangle.get_vector_np(p_j.vertex[2], ci), transform)
 
                 print('original v0, v1, v2\n', v0, v1, v2)
 
@@ -106,8 +106,8 @@ class FormFactor(object):
         z = Triangle.get_normal_vector_np(p)
         y = np.cross(z, x)
 
-        A = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        B = np.array([x, y, z])
+        A = np.array([x, y, z])
+        B = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
         X = np.linalg.solve(A, B)
         return X
