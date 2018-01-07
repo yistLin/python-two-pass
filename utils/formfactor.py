@@ -106,27 +106,11 @@ class FormFactor(object):
         z = Triangle.get_normal_vector_np(p)
         y = np.cross(z, x)
 
-        cos_beta = z[2]
-        sin_beta = np.sqrt(1 - cos_beta**2)
+        A = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        B = np.array([x, y, z])
 
-        cos_alpha = -z[1] / sin_beta
-        sin_alpha = z[0] / sin_beta
-
-        cos_gamma = y[2] / cos_beta
-        sin_gamma = x[2] / cos_beta
-
-        t_gamma = np.array([[cos_gamma, sin_gamma, 0],
-                        [-sin_gamma, cos_gamma, 0],
-                        [0, 0, 1]])
-        t_beta = np.array([[1, 0, 0],
-                        [0, cos_beta, sin_beta],
-                        [0, -sin_beta, cos_beta]])
-        t_alpha = np.array([[cos_alpha, sin_alpha, 0],
-                        [-sin_alpha, cos_alpha, 0],
-                        [0, 0, 1]])
-
-        transform = np.dot(t_gamma, t_beta)
-        return np.dot(transform, t_alpha)
+        X = np.linalg.solve(A, B)
+        return X
 
     def project(self, v):
         x = v[0]
