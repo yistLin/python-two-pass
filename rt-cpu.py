@@ -60,19 +60,26 @@ class RayTracer(object):
         img = np.zeros(img_size + (3,))
         x_coord = dst[0]
         ray_ori, ray_drt = [], []
-        for row, z in enumerate(np.linspace(scene[1], scene[3], img_size[1])):
-            for col, y in enumerate(np.linspace(scene[0], scene[2], img_size[0])):
-                dst = np.array([x_coord, y, z])
-                drt = normalize(dst - ori)
-                ray_ori.append(dst)
-                ray_drt.append(drt)
+
+        sz = (scene[3] - scene[1]) / (img_size[1] - 1)
+        sy = (scene[2] - scene[0]) / (img_size[0] - 1)
+        grid_size = 1
+
+        for z in np.linspace(scene[1], scene[3], img_size[1]):
+            for y in np.linspace(scene[0], scene[2], img_size[0]):
+                for dz in np.linspace(0, sz, grid_size, endpoint=False):
+                    for dy in np.linspace(0, sy, grid_size, endpoint=False):
+                        dst = np.array([x_coord, y+dy, z+dz])
+                        drt = normalize(dst - ori)
+                        ray_ori.append(dst)
+                        ray_drt.append(drt)
 
         with Pool(processes=4) as pool:
             img = pool.starmap(self._trace_ray, zip(ray_ori, ray_drt, repeat(1.), repeat(max_depth)))
 
         img = np.array(img)
         img = np.clip(img, 0., 1.)
-        img = img.reshape(img_size + (-1,))
+        img = img.reshape(img_size + (grid_size ** 2, -1)).mean(2)
         img = np.flipud(img)
 
         return img
