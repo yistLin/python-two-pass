@@ -51,22 +51,17 @@ class RayTracer(object):
         # vertex color = averaged color of neighboring triangles
         vtx_dict = {}
         mat_p_rnd = np.around(mat_p, 4)
-        for i, (tri, clr) in enumerate(zip(mat_p_rnd.tolist(), self.mat_c)):
-            for j, pnt in enumerate(tri):
-                key = tuple(pnt)
-                if key not in vtx_dict:
-                    vtx_dict[key] = [clr, 1, (i, j)]
-                else:
-                    vtx_clr = vtx_dict[key][0]
-                    vtx_cnt = vtx_dict[key][1]
-                    vtx_dict[key][0] = vtx_clr * (vtx_cnt / (vtx_cnt+1)) + clr * (1 / (vtx_cnt+1))
-                    vtx_dict[key][1] = vtx_cnt + 1
-                    vtx_dict[key].append((i, j))
-        self.mat_vtx_c = np.empty(mat_p.shape, dtype=np.float32)
-        for key, val in vtx_dict.items():
-            vtx_clr = val[0]
-            for i, j in val[2:]:
-                self.mat_vtx_c[i, j, :] = vtx_clr
+        for idx, vtx in enumerate(mat_p_rnd.reshape(-1, 3)):
+            vtx = tuple(vtx)
+            if vtx not in vtx_dict:
+                vtx_dict[vtx] = []
+
+            vtx_dict[vtx].append(np.unravel_index(idx, mat_p_rnd.shape[:-1]))
+
+        self.mat_vtx_c = np.empty(mat_p_rnd.shape, dtype=np.float32)
+        for vtx, idx in vtx_dict.items():
+            idx = np.array(idx)
+            self.mat_vtx_c[idx[:, 0], idx[:, 1], :] = self.mat_c[idx[:, 0]].mean(0)
 
         # speed up intersection test
         self.v0 = self.mat_p[:, 2] - self.mat_p[:, 0]
