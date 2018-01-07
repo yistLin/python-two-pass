@@ -14,6 +14,12 @@ class TriangleSet(object):
     def __len__(self):
         return len(self.triangle_set)
 
+    def __iter__(self):
+        return iter(self.triangle_set)
+
+    def __next__(self):
+        return next(self.triangle_set)
+
     def add_triangle(self, t):
         self.triangle_set.append(t)
 
