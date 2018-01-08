@@ -3,6 +3,7 @@
 
 import sys
 import numpy as np
+from copy import deepcopy
 from utils.triangle import Triangle
 from utils.triangle_set import TriangleSet
 from utils.transform_matrix import TransformMatrix
@@ -36,7 +37,9 @@ class Entity(object):
         elif entity_name == 'globe':
             pass
         elif entity_name == 'teapot':
-            pass
+            t = Teapot()
+            t.deserialize()
+            return t
         elif entity_name == 'triangleset':
             pass
         else:
@@ -48,9 +51,9 @@ class Entity(object):
         t.reflectivity = self.reflectivity
         t.radiosity = self.radiosity
 
-        t._spec = self._spec
-        t._refl = self._refl
-        t._refr = self._refr
+        t.spec = self._spec
+        t.refl = self._refl
+        t.refr = self._refr
 
     def add_triangle(self, t):
         for i in range(3):
@@ -100,14 +103,17 @@ class Teapot(Entity):
             print("There's no such indicator {}".format(indicator))
             sys.exit(-2)
 
+    def deserialize(self):
+        self.trianglenize()
+
     def trianglenize(self):
-        for i, item in enumerate(teapot_t):
+        for i, item in enumerate(self.teapot_t):
             t = Triangle()
             self.set_triangle_properties(t)
 
             for j in range(3):
-                t.vertex[j] = teapot_v[teapot_t[i][2 - j]]
-                t.vertex[j]['y'], t.vertex[j]['z'] =\
+                t.vertex[j] = deepcopy(self.teapot_v[self.teapot_t[i][2 - j]])
+                t.vertex[j]['y'], t.vertex[j]['z'] = \
                     t.vertex[j]['z'], t.vertex[j]['y']
 
             self.add_triangle(t)
