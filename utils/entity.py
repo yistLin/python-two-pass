@@ -39,7 +39,9 @@ class Entity(object):
             c.deserialize()
             return c
         elif entity_name == 'globe':
-            pass
+            g = Globe()
+            g.deserialize()
+            return g
         elif entity_name == 'teapot':
             t = Teapot()
             t.deserialize()
@@ -203,6 +205,70 @@ class Globe(Entity):
     def __init__(self, spec=1.0, refl=0.7, refr=0.0):
         super(Globe, self).__init__(spec, refl, refr)
         self.name = "globe"
+
+    def deserialize(self):
+        self.trianglenize()
+
+    def trianglenize(self):
+        PLANE_COUNT = 20
+        RADIUS = 0.5
+
+        lastV = [Triangle.Vertex() for i in range(PLANE_COUNT + 3)]
+        thisV, now = Triangle.Vertex(), Triangle.Vertex()
+
+        four_vertex = [Triangle.Vertex() for i in range(4)]
+        for j in range(PLANE_COUNT / 2 + 1):  # for j
+            angle = 2 * np.pi / PLANE_COUNT * j
+            x0, z0 = RADIUS * np.cos(angle), RADIUS * np.sin(angle)
+            for i in range(PLANE_COUNT + 3):  # for i
+                angle2 = 2 * np.pi / PLANE_COUNT * i
+                x, z = z0 * np.cos(angle2), z0 * np.sin(angle2)
+
+                now['x'] = deepcopy(x)
+                now['y'] = deepcopy(y)
+                now['z'] = deepcopy(z)
+
+                if j == 0:
+                    lastV[i]['x'] = lastV[i]['z'] = 0
+                    lastV[i]['y'] = RADIUS
+                else:  # j != 0
+                    if i == 0:
+                        thisV = deepcopy(now)
+                    else:  # i != 0
+                        # present
+                        four_vertex[0] = deepcopy(now)
+                        # last
+                        four_vertex[1] = deepcopy(thisV)
+                        # from last pass
+                        four_vertex[2] = deepcopy(lastV[i-1])
+                        four_vertex[3] = deepcopy(lastV[i])
+                        # fix of floating point error
+                        if j == PLANE_COUNT / 2:
+                            v[0]['x'], v[0]['z'] = 0, 0
+                            v[1]['x'], v[1]['z'] = 0, 0
+
+                        if (i != PLANE_COUNT+1+1) and (i != 1):
+                            self.add_quad(four_vertex)
+
+                        lastV[i-1] = thisV
+                        thisV = now
+
+    def add_quad(self, four_vertex):
+        t = Triangle()
+        self.set_triangle_properties(t)
+
+        # add triangle 1
+        t.vertex[0] = deepcopy(four_vertex[0])
+        t.vertex[1] = deepcopy(four_vertex[1])
+        t.vertex[2] = deepcopy(four_vertex[2])
+        if t.vertex[0] != t.vertex[1]:  # bottom 0
+            self.add_triangle(t)
+
+        # add triangle 2
+        t.vertex[1] = deepcopy(four_vertex[2])
+        t.vertex[2] = deepcopy(four_vertex[3])
+        if t.vertex[1] != t.vertex[2]:  # top 0
+            self.add_triangle(t)
 
 
 class Teapot(Entity):
