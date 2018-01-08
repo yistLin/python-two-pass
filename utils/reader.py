@@ -106,7 +106,7 @@ def xml_read_scene(fname):
                 idx += 1
 
         for obj_name in obj_trans.keys():
-            scene[obj_name].transform(obj_trnas[obj_name])
+            scene[obj_name].transform(obj_trans[obj_name])
 
         return scene
 
