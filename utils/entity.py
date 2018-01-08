@@ -81,16 +81,23 @@ class Barrel(Entity):
         four_vertex = [Triangle.Vertex() for i in range(4)]
 
         for i in range(PLANE_COUNT + 1):
-            four_vertex[3] = four_vertex[2]
-            four_vertex[0] = four_vertex[1]
+            four_vertex[3] = deepcopy(four_vertex[2])
+            four_vertex[0] = deepcopy(four_vertex[1])
             # compute coords (http://en.wikipedia.org/wiki/Sphere)
             angle = 2 * np.pi / PLANE_COUNT * i
             x, z = RADIUS * np.cos(angle), RADIUS * np.sin(angle)
-            four_vertex[2]['x'] = four_vertex[1]['x'] = x
-            four_vertex[2]['z'] = four_vertex[1]['z'] = z
+            four_vertex[1]['x'] = deepcopy(x)
             four_vertex[1]['y'] = +0.5
+            four_vertex[1]['z'] = deepcopy(z)
+            four_vertex[2]['x'] = deepcopy(x)
             four_vertex[2]['y'] = -0.5
-            self.add_base_triangle(four_vertex)
+            four_vertex[2]['z'] = deepcopy(z)
+
+            if i != 0:
+                # face
+                self.add_quad(four_vertex)
+                # upper and lower base
+                self.add_base_triangle(four_vertex)
 
     def add_base_triangle(self, four_vertex):
         t = Triangle()
