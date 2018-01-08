@@ -66,7 +66,7 @@ class TransformMatrix(object):
         pass
 
     def transform(self, vertex):
-        v = (vertex['x'], vertex['y'], vertex['z'], 1)
+        v = np.array([vertex['x'], vertex['y'], vertex['z'], 1])
         t_v = np.dot(self._matrix.T, v)
-        factor = t_v[-1]
+        factor = 1/t_v[-1]
         return Triangle.Vertex(t_v[0]/factor, t_v[1]/factor, t_v[2]/factor)
