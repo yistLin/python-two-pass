@@ -44,7 +44,7 @@ def rotate(mat, rad, axis):
 class RayTracer(object):
     def __init__(self, mat_c, mat_p, mat_n, mat_e, mat_spec, mat_refl, mat_refr):
         self.num_tris = mat_p.shape[0]
-        self.mat_c = torch.cuda.FloatTensor(mat_c)
+        self.mat_c = np.clip(mat_c, 0., 1.)
         self.mat_p = torch.cuda.FloatTensor(mat_p)
         self.mat_n = torch.cuda.FloatTensor(mat_n)
         self.mat_e = torch.cuda.FloatTensor(mat_e)
@@ -88,7 +88,7 @@ class RayTracer(object):
 
         idx, pnt_int = ret
 
-        return self.mat_c[idx, :].cpu().numpy()
+        return self.mat_c[idx, :].squeeze()
 
     def _intersect(self, ray_ori, ray_drt):
         ray_drt = torch.unsqueeze(ray_drt, 1)
