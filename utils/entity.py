@@ -33,7 +33,9 @@ class Entity(object):
         if entity_name == 'barrel':
             pass
         elif entity_name == 'cuboid':
-            pass
+            c = Cuboid()
+            c.deserialize()
+            return c
         elif entity_name == 'globe':
             pass
         elif entity_name == 'teapot':
@@ -75,6 +77,67 @@ class Cuboid(Entity):
     def __init__(self, spec=1.0, refl=0.1, refr=0.0):
         super(Cuboid, self).__init__(spec, refl, refr)
         self.name = "cuboid"
+
+    def deserialize(self):
+        self.trianglenize()
+
+    def trianglenize(self):
+        planes = [
+            [  # left plane
+                Triangle.Vertex(-0.5, -0.5, -0.5),
+                Triangle.Vertex(-0.5, -0.5, +0.5),
+                Triangle.Vertex(-0.5, +0.5, +0.5),
+                Triangle.Vertex(-0.5, +0.5, -0.5),
+            ],
+            [  # right plane
+                Triangle.Vertex(+0.5, -0.5, -0.5),
+                Triangle.Vertex(+0.5, +0.5, -0.5),
+                Triangle.Vertex(+0.5, +0.5, +0.5),
+                Triangle.Vertex(+0.5, -0.5, +0.5),
+            ],
+            [  # down plane
+                Triangle.Vertex(-0.5, -0.5, -0.5),
+                Triangle.Vertex(+0.5, -0.5, -0.5),
+                Triangle.Vertex(+0.5, -0.5, +0.5),
+                Triangle.Vertex(-0.5, -0.5, +0.5),
+            ],
+            [  # up plane
+                Triangle.Vertex(-0.5, +0.5, -0.5),
+                Triangle.Vertex(-0.5, +0.5, +0.5),
+                Triangle.Vertex(+0.5, +0.5, +0.5),
+                Triangle.Vertex(+0.5, +0.5, -0.5),
+            ],
+            [  # rear plane
+                Triangle.Vertex(-0.5, -0.5, -0.5),
+                Triangle.Vertex(-0.5, +0.5, -0.5),
+                Triangle.Vertex(+0.5, +0.5, -0.5),
+                Triangle.Vertex(+0.5, -0.5, -0.5),
+            ],
+            [  # front plane
+                Triangle.Vertex(-0.5, -0.5, +0.5),
+                Triangle.Vertex(+0.5, -0.5, +0.5),
+                Triangle.Vertex(+0.5, +0.5, +0.5),
+                Triangle.Vertex(-0.5, +0.5, +0.5),
+            ],
+        ]
+
+        for plane in planes:
+            self.add_quad(plane)
+
+    def add_quad(self, plane):
+        t = Triangle()
+        self.set_triangle_properties(t)
+
+        # add triangle 1
+        t.vertex[0] = deepcopy(plane[0])
+        t.vertex[1] = deepcopy(plane[1])
+        t.vertex[2] = deepcopy(plane[2])
+        self.add_triangle(t)
+
+        # add triangle 2
+        t.vertex[1] = deepcopy(plane[2])
+        t.vertex[2] = deepcopy(plane[3])
+        self.add_triangle(t)
 
 
 class Globe(Entity):
