@@ -3,6 +3,7 @@
 
 import numpy as np
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 
 from utils.entity import Entity
 
@@ -74,9 +75,37 @@ def xml_read_scene(fname):
 
         return scene
 
-    def read_info(objs_info):
-        for obj in objs_info.iter('object'):
-            print('==={}==={}==='.format(obj.tag, obj.attrib))
+    def read_info(root, scene):
+        stack = [(root, -1)]
+        idx = 0
+        trans = {}
+
+        obj_info = {obj_name: {'cnt': 0, 'trans': []} for obj_name in scene.keys()}
+
+        # perform DFS on XML's element tree
+        while stack:
+            node, pidx = stack.pop()
+
+            for elem in reversed(node):
+                if elem.tag == 'object':
+                    cidx = pidx
+                    obj_name = elem.attrib['name']
+                    suffix = obj_info[obj_name]['cnt']
+                    if suffix:
+                        scene['{}:{}'.format(obj_name, suffix)] = deepcopy(scene[obj_name])
+                    obj_info[obj_name]['cnt'] += 1
+                    while cidx != -1:
+                        t, cidx = trans[cidx]
+                        obj_info[obj_name]['trans'].append((t.tag, t.attrib))
+
+                stack.append((elem, idx))
+                trans[idx] = (elem, pidx)
+                idx += 1
+
+        for obj_name in scene.keys():
+            scene[obj_name].transform(obj_info[obj_name]['trans'])
+
+        return scene
 
     # parse XML
     tree = ET.parse(fname)
@@ -87,7 +116,7 @@ def xml_read_scene(fname):
     objs_info = root.find('body')
 
     scene = read_root(objs_root)
-    read_info(objs_info)
+    scene = read_info(objs_info, scene)
 
 
 def xml_read_tri(fname):
