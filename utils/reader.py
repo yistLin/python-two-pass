@@ -121,6 +121,8 @@ def xml_read_scene(fname):
     scene = read_head(head)
     scene = read_body(body, scene)
 
+    return scene
+
 
 def xml_read_tri(fname):
     # important info
