@@ -6,6 +6,7 @@ import numpy as np
 from utils.triangle import Triangle
 from utils.triangle_set import TriangleSet
 from utils.transform_matrix import TransformMatrix
+from utils.teapot_def import teapot_data
 
 
 class Entity(object):
@@ -51,6 +52,11 @@ class Entity(object):
         t._refl = self._refl
         t._refr = self._refr
 
+    def add_triangle(self, t):
+        for i in range(3):
+            t.vertex[i] = self.transform_matrix.transform(t.vertex[i])
+        self.triangle_set.add_triangle(t)
+
 
 class Barrel(Entity):
     """docstring for Barrel"""
@@ -82,10 +88,26 @@ class Teapot(Entity):
     def __init__(self, spec=1.0, refl=0.0, refr=0.8):
         super(Teapot, self).__init__(spec, refl, refr)
         self.name = "teapot"
-        self.teapot_v = self.read()
-        self.teapot_v_count = len(self.teapot_v)
-        self.teapot_t = self.read()
-        self.teapot_t_count = len(self.teapot_t)
+        self.teapot_v = self.read('v')
+        self.teapot_t = self.read('t')
 
-    def deserialize():
-        pass
+    def read(self, indicator):
+        if indicator == 'v':
+            return teapot_data['teapot_v']
+        elif indicator == 't':
+            return teapot_data['teapot_t']
+        else:
+            print("There's no such indicator {}".format(indicator))
+            sys.exit(-2)
+
+    def trianglenize(self):
+        for i, item in enumerate(teapot_t):
+            t = Triangle()
+            self.set_triangle_properties(t)
+
+            for j in range(3):
+                t.vertex[j] = teapot_v[teapot_t[i][2 - j]]
+                t.vertex[j]['y'], t.vertex[j]['z'] =\
+                    t.vertex[j]['z'], t.vertex[j]['y']
+
+            self.add_triangle(t)
