@@ -3,6 +3,7 @@
 
 import torch
 import numpy as np
+from itertools import repeat
 
 from utils import xml_read_tri
 
@@ -49,8 +50,23 @@ class RayTracer(object):
         self.mat_n = torch.cuda.FloatTensor(mat_n)
         self.mat_e = torch.cuda.FloatTensor(mat_e)
         self.mat_spec = torch.cuda.FloatTensor(mat_spec)
-        self.mat_refl = torch.cuda.FloatTensor(mat_refl)
+        self.mat_refl = mat_refl
         self.mat_refr = torch.cuda.FloatTensor(mat_refr)
+
+        # vertex color = averaged color of neighboring triangles
+        vtx_dict = {}
+        mat_p_rnd = np.around(mat_p, 4)
+        for idx, vtx in enumerate(mat_p_rnd.reshape(-1, 3)):
+            vtx = tuple(vtx)
+            if vtx not in vtx_dict:
+                vtx_dict[vtx] = []
+
+            vtx_dict[vtx].append(np.unravel_index(idx, mat_p_rnd.shape[:-1]))
+
+        self.mat_vtx_c = np.empty(mat_p_rnd.shape, dtype=np.float32)
+        for vtx, idx in vtx_dict.items():
+            idx = np.array(idx)
+            self.mat_vtx_c[idx[:, 0], idx[:, 1], :] = self.mat_c[idx[:, 0]].mean(0)
 
         # speed up intersection test
         self.v0 = self.mat_p[:, 2] - self.mat_p[:, 0]
@@ -60,7 +76,7 @@ class RayTracer(object):
         self.d11 = inner1d(self.v1, self.v1)
         self.invDenom = 1. / (self.d00 * self.d11 - self.d01 * self.d01)
 
-    def trace(self, img_size, ori, dst, scene):
+    def trace(self, img_size, ori, dst, scene, max_depth=3):
         img = np.zeros(img_size + (3,))
         x_coord = dst[0]
         ray_ori, ray_drt = [], []
@@ -71,7 +87,7 @@ class RayTracer(object):
                 ray_ori.append(torch.cuda.FloatTensor(dst))
                 ray_drt.append(torch.cuda.FloatTensor(drt))
 
-        img = [self._trace_ray(ori, drt) for ori, drt in zip(ray_ori, ray_drt)]
+        img = [self._trace_ray(ori, drt, refl, depth) for ori, drt, refl, depth in zip(ray_ori, ray_drt, repeat(1.), repeat(max_depth))]
 
         img = np.array(img)
         img = np.clip(img, 0., 1.)
@@ -80,15 +96,29 @@ class RayTracer(object):
 
         return img
 
-    def _trace_ray(self, ray_ori, ray_drt):
+    def _trace_ray(self, ray_ori, ray_drt, refl, depth):
         ret = self._intersect(ray_ori, ray_drt)
 
         if ret is None:
             return np.array([0., 0., 0.], dtype=np.float32)
 
-        idx, pnt_int = ret
+        idx, pnt_int, (u, v) = ret
 
-        return self.mat_c[idx, :].squeeze()
+        # vertice color interpolation
+        tri_int = self.mat_vtx_c[idx].squeeze()
+        color = (1. - u - v) * tri_int[0] + v * tri_int[1] + u * tri_int[2]
+
+        refl_int = self.mat_refl[idx]
+
+        if depth > 1 and refl * refl_int > 0.01:
+            new_ray_drt = ray_drt - 2 * torch.dot(ray_drt, self.mat_n[idx, :].squeeze()) * self.mat_n[idx, :]
+            new_ray_drt = (new_ray_drt / new_ray_drt.norm(p=2)).squeeze()
+            new_ray_ori = pnt_int + 1e-3 * new_ray_drt
+            ret_color = self._trace_ray(new_ray_ori, new_ray_drt, refl * refl_int, depth - 1)
+
+            color = color + ret_color
+
+        return refl * color
 
     def _intersect(self, ray_ori, ray_drt):
         ray_drt = torch.unsqueeze(ray_drt, 1)
@@ -107,17 +137,14 @@ class RayTracer(object):
         v = (self.d00 * d12 - self.d01 * d02) * self.invDenom
 
         # inside triangle
-        within = (u >= 0.) & (v >= 0.) & (u + v < 1.)
-
-        dist[~within] = np.inf
-        dist[dist <= 0.] = np.inf
+        dist[~((u >= 0.) & (v >= 0.) & (u + v < 1.)) | (dist <= 0.)] = np.inf
 
         if (dist == np.inf).all():
             return None
 
         _, idx_min = torch.min(dist, 0)
 
-        return idx_min, pnt_int[idx_min, :]
+        return idx_min, pnt_int[idx_min, :], (u[idx_min].cpu().numpy().squeeze(), v[idx_min].cpu().numpy().squeeze())
 
 
 if __name__ == '__main__':
@@ -143,6 +170,6 @@ if __name__ == '__main__':
     dst = np.array([20., 0., 0.], dtype=np.float32)
     scene = (-15, -15, 10, 10)
 
-    img = tracer.trace(img_size, ori, dst, scene)
+    img = tracer.trace(img_size, ori, dst, scene, max_depth=3)
     imsave('fig.png', img)
 
