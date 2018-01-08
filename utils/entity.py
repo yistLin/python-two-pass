@@ -31,7 +31,9 @@ class Entity(object):
     @staticmethod
     def create(entity_name, list_of_args):
         if entity_name == 'barrel':
-            pass
+            b = Barrel()
+            b.deserialize()
+            return b
         elif entity_name == 'cuboid':
             c = Cuboid()
             c.deserialize()
@@ -66,9 +68,57 @@ class Entity(object):
 class Barrel(Entity):
     """docstring for Barrel"""
 
-    def __init__(self, spec=1.0, refl=0.0, refr=0.0):
+    def __init__(self, spec=0.6, refl=0.2, refr=0.1):
         super(Barrel, self).__init__(spec, refl, refr)
         self.name = "barrel"
+
+    def deserialize(self):
+        self.trianglenize()
+
+    def trianglenize(self):
+        PLANE_COUNT = 20
+        RADIUS = 0.5
+        four_vertex = [Triangle.Vertex() for i in range(4)]
+
+        for i in range(PLANE_COUNT + 1):
+            four_vertex[3] = four_vertex[2]
+            four_vertex[0] = four_vertex[1]
+            # compute coords (http://en.wikipedia.org/wiki/Sphere)
+            angle = 2 * np.pi / PLANE_COUNT * i
+            x, z = RADIUS * np.cos(angle), RADIUS * np.sin(angle)
+            four_vertex[2]['x'] = four_vertex[1]['x'] = x
+            four_vertex[2]['z'] = four_vertex[1]['z'] = z
+            four_vertex[1]['y'] = +0.5
+            four_vertex[2]['y'] = -0.5
+            self.add_base_triangle(four_vertex)
+
+    def add_base_triangle(self, four_vertex):
+        t = Triangle()
+        v = Triangle.Vertex()
+        self.set_triangle_properties(t)
+
+        for j in range(0, len(four_vertex), 2):
+            for i in range(j + 0, j + 2):
+                t.vertex[i - j] = deepcopy(four_vertex[2 * j + 1 - i])
+                v['x'] = v['z'] = 0
+                v['y'] = four_vertex[i]['y']
+                t.vertex[i + 1 - j] = deepcopy(v)
+            self.add_triangle(t)
+
+    def add_quad(self, four_vertex):
+        t = Triangle()
+        self.set_triangle_properties(t)
+
+        # add triangle 1
+        t.vertex[0] = deepcopy(four_vertex[0])
+        t.vertex[1] = deepcopy(four_vertex[1])
+        t.vertex[2] = deepcopy(four_vertex[2])
+        self.add_triangle(t)
+
+        # add triangle 2
+        t.vertex[1] = deepcopy(four_vertex[2])
+        t.vertex[2] = deepcopy(four_vertex[3])
+        self.add_triangle(t)
 
 
 class Cuboid(Entity):
