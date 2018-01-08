@@ -48,9 +48,9 @@ xml_tag_attr_name = {
 
 
 def xml_read_scene(fname):
-    def read_root(objs_root):
+    def read_head(head):
         scene = {}
-        for obj in objs_root.iter('objectdef'):
+        for obj in head.iter('objectdef'):
             obj_name = obj.attrib['name']
             list_of_args = []
             for entity in obj:
@@ -75,8 +75,8 @@ def xml_read_scene(fname):
 
         return scene
 
-    def read_info(root, scene):
-        stack = [(root, -1)]
+    def read_body(body, scene):
+        stack = [(body, -1)]
         idx = 0
         trans = {}
 
@@ -112,11 +112,11 @@ def xml_read_scene(fname):
     root = tree.getroot()
 
     # get objects definitions & objects translation+rotation info
-    objs_root = root.find('head')
-    objs_info = root.find('body')
+    head = root.find('head')
+    body = root.find('body')
 
-    scene = read_root(objs_root)
-    scene = read_info(objs_info, scene)
+    scene = read_head(head)
+    scene = read_body(body, scene)
 
 
 def xml_read_tri(fname):
