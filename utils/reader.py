@@ -80,7 +80,8 @@ def xml_read_scene(fname):
         idx = 0
         trans = {}
 
-        obj_info = {obj_name: {'cnt': 0, 'trans': []} for obj_name in scene.keys()}
+        obj_cnt = {obj_name: 0 for obj_name in scene.keys()}
+        obj_trans = {}
 
         # perform DFS on XML's element tree
         while stack:
@@ -90,20 +91,22 @@ def xml_read_scene(fname):
                 if elem.tag == 'object':
                     cidx = pidx
                     obj_name = elem.attrib['name']
-                    suffix = obj_info[obj_name]['cnt']
+                    suffix = obj_cnt[obj_name]
+                    name = '{}:{}'.format(obj_name, suffix) if suffix else obj_name
                     if suffix:
-                        scene['{}:{}'.format(obj_name, suffix)] = deepcopy(scene[obj_name])
-                    obj_info[obj_name]['cnt'] += 1
+                        scene[name] = deepcopy(scene[obj_name])
+                    obj_cnt[obj_name] += 1
+                    obj_trans[name] = []
                     while cidx != -1:
                         t, cidx = trans[cidx]
-                        obj_info[obj_name]['trans'].append((t.tag, t.attrib))
+                        obj_trans[name].append((t.tag, t.attrib))
 
                 stack.append((elem, idx))
                 trans[idx] = (elem, pidx)
                 idx += 1
 
-        for obj_name in scene.keys():
-            scene[obj_name].transform(obj_info[obj_name]['trans'])
+        for obj_name in obj_trans.keys():
+            scene[obj_name].transform(obj_trnas[obj_name])
 
         return scene
 
