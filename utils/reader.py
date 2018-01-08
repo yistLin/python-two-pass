@@ -4,7 +4,7 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 
-from utils.triangle import Triangle
+from utils.entity import Entity
 
 
 xml_tag_name = {
@@ -48,18 +48,35 @@ xml_tag_attr_name = {
 
 def xml_read_scene(fname):
     def read_root(objs_root):
-        for obj in objs_root:
-            print('==={}==={}==='.format(obj.tag, obj.attrib['name']))
+        scene = {}
+        for obj in objs_root.iter('objectdef'):
+            obj_name = obj.attrib['name']
+            list_of_args = []
+            for entity in obj:
+                entity_name = 'triangleset'
+                attrs = {k: tuple(v.split(',')) for k, v in entity.items() if k != 'name'}
+                if entity.tag == 'triangleset':
+                    for triangle in entity:
+                        if triangle.tag == 'triangle':
+                            vs = [(p.get('x'), p.get('y'), p.get('z')) for p in triangle.iter('vertex')]
+                        elif triangle.tag == 'trianglenext':
+                            vs = vs[-2:] + [(p.get('x'), p.get('y'), p.get('z')) for p in triangle.iter('vertex')]
+                        else:
+                            raise AttributeError("Tag doesn't match either triangle or trianglenext.")
 
-            for tri in obj:
-                print(tri.tag, tri.attrib)
+                        vertex = {'v{}'.format(v): p for v, p in enumerate(vs)}
+                        list_of_args.append({**vertex, **attrs})
+                else:
+                    entity_name = entity.tag
+                    list_of_args.append(attrs)
+
+            scene[obj_name] = Entity.create(entity_name, list_of_args)
+
+        return scene
 
     def read_info(objs_info):
-        for obj in objs_info:
+        for obj in objs_info.iter('object'):
             print('==={}==={}==='.format(obj.tag, obj.attrib))
-
-            for tri in obj:
-                print(tri.tag, tri.attrib)
 
     # parse XML
     tree = ET.parse(fname)
@@ -69,8 +86,8 @@ def xml_read_scene(fname):
     objs_root = root.find('head')
     objs_info = root.find('body')
 
-    read_root(objs_root)
-    # read_info(objs_info)
+    scene = read_root(objs_root)
+    read_info(objs_info)
 
 
 def xml_read_tri(fname):
