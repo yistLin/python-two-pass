@@ -18,11 +18,11 @@ class Entity(object):
 
         raytracing_attr = {
             'entity': {'spec': 1.0, 'refl': 0.0, 'refr': 0.0},
-            'barrel': {'spec': 0.6, 'refl': 0.2, 'refr': 0.1},
-            'cuboid': {'spec': 1.0, 'refl': 0.1, 'refr': 0.0},
-            'globe': {'spec': 0.5, 'refl': 0.7, 'refr': 0.0},
+            'barrel': {'spec': 0.6, 'refl': 0.0, 'refr': 0.1},
+            'cuboid': {'spec': 1.0, 'refl': 0.0, 'refr': 0.0},
+            'globe': {'spec': 0.5, 'refl': 0.0, 'refr': 0.0},
             'teapot': {'spec': 0.8, 'refl': 0.0, 'refr': 0.8},
-            'tset': {'spec': 0.2, 'refl': 0.2, 'refr': 0.2},
+            'tset': {'spec': 0.2, 'refl': 0.05, 'refr': 0.2},
         }
 
         init_attr = list_of_args[0]  # get the first element to set attr
