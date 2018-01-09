@@ -9,6 +9,7 @@ import numpy as np
 from utils import FormFactor
 from utils import TriangleSet, Triangle
 from utils.reader import xml_read_scene
+from utils import XMLWriter
 
 def divide(p):
     to_patch_list = []
@@ -78,8 +79,7 @@ def radiosity(args):
             rad = np.add(rad, Triangle.get_color_np(p.emission))
             patch_list[i].set_radiosity(rad)
 
-    # TODO xml write
-
+    XMLWriter.write(args.output_file, patch_list)
 
 
 if __name__ == '__main__':
