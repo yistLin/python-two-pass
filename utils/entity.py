@@ -22,7 +22,7 @@ class Entity(object):
             'cuboid': {'spec': 1.0, 'refl': 0.1, 'refr': 0.0},
             'globe': {'spec': 0.5, 'refl': 0.7, 'refr': 0.0},
             'teapot': {'spec': 0.8, 'refl': 0.0, 'refr': 0.8},
-            'triangleset': {'spec': 0.2, 'refl': 0.2, 'refr': 0.2},
+            'tset': {'spec': 0.2, 'refl': 0.2, 'refr': 0.2},
         }
 
         init_attr = list_of_args[0]  # get the first element to set attr
@@ -71,7 +71,8 @@ class Entity(object):
             t.deserialize()
             return t
         elif entity_name == 'triangleset':
-            pass
+            tset = Tset(list_of_args)
+            return tset
         else:
             print("There's no such object name {}!!!".format(obj_name))
             sys.exit(-1)
@@ -326,3 +327,17 @@ class Teapot(Entity):
                     t.vertex[j]['z'], t.vertex[j]['y']
 
             self.add_triangle(t)
+
+
+class Tset(Entity):
+    """docstring for Tset"""
+
+    def __init__(self, list_of_args):
+        super(Tset, self).__init__(list_of_args, "tset")
+        attrs = {
+            'spec': self._spec,
+            'refl': self._refl,
+            'refr': self._refr
+        }
+        for tri in list_of_args:
+            self.add_triangle(Triangle(**{**tri, **attrs}))
