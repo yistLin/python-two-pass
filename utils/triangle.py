@@ -109,7 +109,7 @@ class Triangle(object):
     def set_radiosity(self, input):
         if isinstance(input, dict):
             self.radiosity = Triangle.Color(input['r'], input['g'], input['b'])
-        elif isinstance(input, (tuple, list, np.array)):
+        elif isinstance(input, (tuple, list, np.ndarray)):
             self.radiosity = Triangle.Color(input[0], input[1], input[2])
 
     def get_emission(self):
