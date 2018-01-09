@@ -53,9 +53,6 @@
 		<objectdef name="stay">
 			<cuboid reflectivity='.70,.60,.36'/>
 		</objectdef>
-		<objectdef name="desk">
-			<cuboid reflectivity='.70,.60,.36'/>
-		</objectdef>
 
 		<!-- Rack -->
 		<objectdef name="main_desk">

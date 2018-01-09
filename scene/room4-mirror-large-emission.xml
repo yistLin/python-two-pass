@@ -53,9 +53,6 @@
 		<objectdef name="stay">
 			<cuboid reflectivity='.70,.60,.36'/>
 		</objectdef>
-		<objectdef name="desk">
-			<cuboid reflectivity='.70,.60,.36'/>
-		</objectdef>
 
 		<!-- Rack -->
 		<objectdef name="main_desk">
@@ -92,7 +89,7 @@
 			<cuboid reflectivity='.05,.05,.05'/>
 		</objectdef>
 		<objectdef name="biglamp_bulb">
-			<globe emission='5,5,5'/>
+			<globe emission='200,200,200'/>
 		</objectdef>
 		<objectdef name="biglamp_shader">
 			<triangleset reflectivity='.15,.15,.15'>
@@ -345,7 +342,7 @@
 
 		</objectdef>
 		<objectdef name="lamp_bulb">
-			<globe emission='3,3,3'/>
+			<globe emission='70,70,70'/>
 		</objectdef>
 		<objectdef name="lamp_strap">
 			<barrel reflectivity='.15,.15,.15'/>
