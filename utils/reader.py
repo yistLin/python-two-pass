@@ -8,45 +8,6 @@ from copy import deepcopy
 from utils.entity import Entity
 
 
-xml_tag_name = {
-    "Root": "scene",
-    "Definition": "head",
-    "Instantiate": "body",
-    "ObjectDefinition": "objectdef",
-    "Cuboid": "cuboid",
-    "Barrel": "barrel",
-    "Globe": "globe",
-    "Teapot": "teapot",
-    "TriangleSetNode": "triangleset",
-    "TriangleNode": "triangle",
-    "VertexNode": "vertex",
-    "Rotate": "rotate",
-    "Scale": "scale",
-    "Shear": "shear",
-    "Translate": "translate",
-    "Object": "object",
-    "Trianglenext": "trianglenext"
-}
-
-xml_tag_attr_name = {
-    "Name": "name",
-    "Emission": "emission",
-    "Reflectivity": "reflectivity",
-    "Radiosity": "radiosity",
-    "VertexX": "x",
-    "VertexY": "y",
-    "VertexZ": "z",
-    "TransformationX": "dx",
-    "TransformationY": "dy",
-    "TransformationZ": "dz",
-    "RotateAngle": "angle",
-    "IncludeFile": "file",
-    "Spec": "spec",
-    "Refr": "refr",
-    "Refl": "refl"
-}
-
-
 def xml_read_scene(fname):
     def read_head(head):
         scene = {}
