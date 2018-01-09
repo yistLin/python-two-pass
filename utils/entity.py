@@ -13,7 +13,7 @@ from utils.teapot_def import teapot_data
 class Entity(object):
     """docstring for Entity"""
 
-    def __init__(self, list_of_args, name="entity"):
+    def __init__(self, list_of_args, name="entity", obj_name=None):
         super(Entity, self).__init__()
 
         raytracing_attr = {
@@ -34,6 +34,7 @@ class Entity(object):
         self._refl = init_attr.get('refl', raytracing_attr[name]['refl'])
         self._refr = init_attr.get('refr', raytracing_attr[name]['refr'])
 
+        self.obj_name = obj_name
         self.name = name
         self.transform_matrix = TransformMatrix()
         self.triangle_set = TriangleSet()
@@ -53,25 +54,25 @@ class Entity(object):
         self.triangle_set = self.transform_matrix.transform(self.triangle_set)
 
     @staticmethod
-    def create(entity_name, list_of_args):
+    def create(entity_name, list_of_args, obj_name=None):
         if entity_name == 'barrel':
-            b = Barrel(list_of_args)
+            b = Barrel(list_of_args, obj_name)
             b.deserialize()
             return b
         elif entity_name == 'cuboid':
-            c = Cuboid(list_of_args)
+            c = Cuboid(list_of_args, obj_name)
             c.deserialize()
             return c
         elif entity_name == 'globe':
-            g = Globe(list_of_args)
+            g = Globe(list_of_args, obj_name)
             g.deserialize()
             return g
         elif entity_name == 'teapot':
-            t = Teapot(list_of_args)
+            t = Teapot(list_of_args, obj_name)
             t.deserialize()
             return t
         elif entity_name == 'triangleset':
-            tset = Tset(list_of_args)
+            tset = Tset(list_of_args, obj_name)
             return tset
         else:
             print("There's no such object name {}!!!".format(obj_name))
@@ -82,6 +83,7 @@ class Entity(object):
         t.reflectivity = self.reflectivity
         t.radiosity = self.radiosity
 
+        t.name = self.obj_name
         t.spec = self._spec
         t.refl = self._refl
         t.refr = self._refr
@@ -94,8 +96,8 @@ class Entity(object):
 class Barrel(Entity):
     """docstring for Barrel"""
 
-    def __init__(self, list_of_args):
-        super(Barrel, self).__init__(list_of_args, "barrel")
+    def __init__(self, list_of_args, obj_name=None):
+        super(Barrel, self).__init__(list_of_args, "barrel", obj_name)
 
     def deserialize(self):
         self.trianglenize()
@@ -156,8 +158,8 @@ class Barrel(Entity):
 class Cuboid(Entity):
     """docstring for Cuboid"""
 
-    def __init__(self, list_of_args):
-        super(Cuboid, self).__init__(list_of_args, "cuboid")
+    def __init__(self, list_of_args, obj_name=None):
+        super(Cuboid, self).__init__(list_of_args, "cuboid", obj_name)
 
     def deserialize(self):
         self.trianglenize()
@@ -228,8 +230,8 @@ class Cuboid(Entity):
 class Globe(Entity):
     """docstring for Globe"""
 
-    def __init__(self, list_of_args):
-        super(Globe, self).__init__(list_of_args, "globe")
+    def __init__(self, list_of_args, obj_name=None):
+        super(Globe, self).__init__(list_of_args, "globe", obj_name)
 
     def deserialize(self):
         self.trianglenize()
@@ -304,8 +306,8 @@ class Globe(Entity):
 class Teapot(Entity):
     """docstring for Teapot"""
 
-    def __init__(self, list_of_args):
-        super(Teapot, self).__init__(list_of_args, "teapot")
+    def __init__(self, list_of_args, obj_name=None):
+        super(Teapot, self).__init__(list_of_args, "teapot", obj_name)
         self.teapot_v = self.read('v')
         self.teapot_t = self.read('t')
 
@@ -337,9 +339,10 @@ class Teapot(Entity):
 class Tset(Entity):
     """docstring for Tset"""
 
-    def __init__(self, list_of_args):
-        super(Tset, self).__init__(list_of_args, "tset")
+    def __init__(self, list_of_args, obj_name=None):
+        super(Tset, self).__init__(list_of_args, "tset", obj_name)
         attrs = {
+            'name': obj_name,
             'spec': self._spec,
             'refl': self._refl,
             'refr': self._refr
