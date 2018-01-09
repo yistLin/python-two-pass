@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 import numpy as np
+from numpy.core.umath_tests import inner1d
 
 from utils.triangle import Triangle
 
@@ -50,9 +51,12 @@ class FormFactor(object):
         for i, p_i in enumerate(patch_list):
             print('[form factor] patch {}/{} ...'.format(i, patch_count))
 
-            visibility_test = self.visibility_hemicube()
+            N_vs = []
+            N_distance = []
             for j, p_j in enumerate(patch_list):
                 if i == j:
+                    N_vs.append(np.array([[-1., -1.], [-1., -2.], [-2., -1.]]))
+                    N_distance.append(np.inf)
                     continue
 
                 ci = Triangle.center_of(p_i)
@@ -69,28 +73,48 @@ class FormFactor(object):
                 v1 = np.dot(Triangle.get_vector_np(p_j.vertex[1], ci), transform)
                 v2 = np.dot(Triangle.get_vector_np(p_j.vertex[2], ci), transform)
 
-                print('original v0, v1, v2\n', v0, v1, v2)
-
                 v0 = self.project(v0)
                 v1 = self.project(v1)
                 v2 = self.project(v2)
 
-                print('transformed v0, v1, v2\n', v0, v1, v2)
+                vs = np.array([v0, v1, v2])
+                N_vs.append(vs)
 
-                distance = Triangle.distance(ci, cj)
-                for x in range(self.edge2):
-                    for y in range(self.edge2):
-                        if self.check_inside((x + 0.5, y + 0.5), v0, v1, v2):
-                            if visibility_test[x][y][1] > distance:
-                                visibility_test[x][y][0] = j
-                                visibility_test[x][y][1] = distance
+                N_distance.append(Triangle.distance(ci, cj))
 
+            # collect all triangles and distances
+            N_vs = np.array(N_vs)
+            N_distance = np.array(N_distance)
+
+            # create empty form factor array
             ff = np.zeros(patch_count)
+
+            # speed up intersection test
+            N_v0 = N_vs[:, 2] - N_vs[:, 0]
+            N_v1 = N_vs[:, 1] - N_vs[:, 0]
+            d00 = inner1d(N_v0, N_v0)
+            d01 = inner1d(N_v0, N_v1)
+            d11 = inner1d(N_v1, N_v1)
+            invDenom = 1. / (d00 * d11 - d01 * d01)
+
+            # iterate hemicube
             for x in range(self.edge2):
                 for y in range(self.edge2):
-                    j = visibility_test[x][y][0]
-                    if 0 <= j < patch_count:
-                        ff[j] += self.delta_formfactor[x][y]
+                    # Barycentric Technique
+                    pnt_int = np.array([x, y])
+                    N_v2 = pnt_int - N_vs[:, 0]
+                    d02 = inner1d(N_v0, N_v2)
+                    d12 = inner1d(N_v1, N_v2)
+                    u = (d11 * d02 - d01 * d12) * invDenom
+                    v = (d00 * d12 - d01 * d02) * invDenom
+
+                    # inside triangle
+                    within = (u >= 0.) & (v >= 0.) & (u + v < 1.)
+                    if within.any():
+                        distance = N_distance.copy()
+                        distance[~within] = np.inf
+                        ff[np.argmin(distance)] += self.delta_formfactor[x][y]
+
             print('ff', ff)
             ffs.append(ff)
 
@@ -163,10 +187,10 @@ class FormFactor(object):
             else:
                 return self.edge2 - self.edge1_2 * (z / np.abs(y)), self.edge + self.edge1_2 * (x / np.abs(y))
 
-    def check_inside(self, v, v0, v1, v2):
-        vec0 = np.array([v0[0] - v[0], v0[1] - v[1]])
-        vec1 = np.array([v1[0] - v[0], v1[1] - v[1]])
-        vec2 = np.array([v2[0] - v[0], v2[1] - v[1]])
+    def check_inside(self, v, vs):
+        vec0 = np.array([vs[0][0] - v[0], vs[0][1] - v[1]])
+        vec1 = np.array([vs[1][0] - v[0], vs[1][1] - v[1]])
+        vec2 = np.array([vs[2][0] - v[0], vs[2][1] - v[1]])
 
         c0 = np.cross(vec0, vec1)
         c1 = np.cross(vec1, vec2)
