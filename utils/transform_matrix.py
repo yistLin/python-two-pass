@@ -1,8 +1,10 @@
 #!/usr/local/bin/python3
 # -*- coding: UTF-8 -*-
 
-from utils.triangle import Triangle
 import numpy as np
+from copy import deepcopy
+from utils.triangle import Triangle
+from utils.triangle_set import TriangleSet
 
 
 class TransformMatrix(object):
@@ -27,13 +29,19 @@ class TransformMatrix(object):
     def mul_matrix_from_right(self, m):
         self._matrix = np.dot(self._matrix, m)
 
-    def rotate(self, angle, vec):
-        angle *= np.pi / 180
-        vec_length = np.sqrt(vec['dx']**2 + vec['dy']**2 + vec['dz']**2)
+    def rotate(self, angle, dx=0., dy=0., dz=0.):
+        angle = float(angle) * (np.pi / 180)
+        vec_length = np.sqrt(dx**2 + dy**2 + dz**2)
         coord = {
             'dx': [(1, 1), (1, 2), (2, 1), (2, 2)],
             'dy': [(0, 0), (0, 2), (2, 0), (2, 2)],
             'dz': [(0, 0), (0, 1), (1, 0), (1, 1)]
+        }
+
+        vec = {
+            'dx': dx,
+            'dy': dy,
+            'dz': dz
         }
 
         for key in sorted(vec.keys()):
@@ -48,25 +56,61 @@ class TransformMatrix(object):
             m[coord[key][3]] = cos
             self.mul_matrix_from_left(m)
 
-    def translate(self, vec):
+    def translate(self, dx=0., dy=0., dz=0.):
         m = self.set_identity()
-        m[3, 0] = vec['dx']
-        m[3, 1] = vec['dy']
-        m[3, 2] = vec['dz']
+        m[3, 0] = dx
+        m[3, 1] = dy
+        m[3, 2] = dz
         self.mul_matrix_from_left(m)
 
-    def scale(self, vec):
+    def scale(self, dx=1., dy=1., dz=1.):
         m = self.set_identity()
-        m[0, 0] = vec['dx']
-        m[1, 1] = vec['dy']
-        m[2, 2] = vec['dz']
+        m[0, 0] = dx
+        m[1, 1] = dy
+        m[2, 2] = dz
         self.mul_matrix_from_left(m)
 
     def shear(self, vec):
         pass
 
-    def transform(self, vertex):
-        v = np.array([vertex['x'], vertex['y'], vertex['z'], 1])
-        t_v = np.dot(self._matrix.T, v)
-        factor = 1/t_v[-1]
-        return Triangle.Vertex(t_v[0]/factor, t_v[1]/factor, t_v[2]/factor)
+    def transform(self, input):
+        if np.array_equal(self._matrix, np.identity(self.dim)):
+            return input
+
+        if isinstance(input, dict):
+            v = Triangle.get_vertex_np(input)
+        elif isinstance(input, Triangle):
+            v = input.vertices
+        elif isinstance(input, TriangleSet):
+            v = np.array([tri.vertices for tri in input])
+        else:
+            raise TypeError("input should be either Vertex,"
+                            "Triangle or TriangleSet.")
+
+        if len(v.shape) != 2:
+            v = v.reshape(-1, 3)
+
+        v = self._transform_utils(v)
+
+        if isinstance(input, dict):
+            v = v.squeeze()
+            output = Triangle.Vertex(v[0], v[1], v[2])
+        elif isinstance(input, Triangle):
+            output = deepcopy(input)
+            output.vertex = [Triangle.Vertex(*v[i]) for i in range(3)]
+        elif isinstance(input, TriangleSet):
+            v = v.reshape(len(input), 3, 3)
+            output = deepcopy(input)
+            for i in range(len(input)):
+                output.triangle_set[i].vertex = [Triangle.Vertex(*v[i, j, :])
+                                                    for j in range(3)]
+
+        return output
+
+    def _transform_utils(self, v):
+        v_homo = np.ones((v.shape[0], v.shape[1] + 1))
+        v_homo[:, :-1] = v
+        t_v = np.dot(self._matrix.T, v_homo.T)
+        factor = (1 / t_v.T[:, -1]).reshape(-1, 1)
+
+        return t_v.T[:, :-1] / factor
