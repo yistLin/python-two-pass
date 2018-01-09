@@ -53,8 +53,9 @@ def meshing(from_patch_list, threshold):
 def radiosity(args):
     patch_list = []
     scene = xml_read_scene(args.input_file)
-    for e in scene.values():
-        patch_list.extend(e.triangle_set.get_patches())
+    for name, e in scene.items():
+        if name == 'xyplane' or name == 'light-source':
+            patch_list.extend(e.triangle_set.get_patches())
 
     print('Total {} patches'.format(len(patch_list)))
     patch_list = meshing(patch_list, args.meshing_size)
@@ -78,6 +79,7 @@ def radiosity(args):
             patch_list[i].set_radiosity(rad)
 
     # TODO xml write
+
 
 
 if __name__ == '__main__':
