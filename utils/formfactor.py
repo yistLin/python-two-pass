@@ -76,6 +76,10 @@ class FormFactor(object):
                 continue
 
             transform = self.get_transform_matrix(p_i)
+            if transform is None:
+                N_vs.append(np.array([[-1., -1.], [-1., -2.], [-2., -1.]]))
+                N_distance.append(np.inf)
+                continue
             v0 = np.dot(Triangle.get_vector_np(p_j.vertex[0], ci), transform)
             v1 = np.dot(Triangle.get_vector_np(p_j.vertex[1], ci), transform)
             v2 = np.dot(Triangle.get_vector_np(p_j.vertex[2], ci), transform)
@@ -83,8 +87,8 @@ class FormFactor(object):
             v1 = self.project(v1)
             v2 = self.project(v2)
             vs = np.array([v0, v1, v2])
-            N_vs.append(vs)
 
+            N_vs.append(vs)
             N_distance.append(Triangle.distance(ci, cj))
 
         # collect all triangles and distances
@@ -134,7 +138,10 @@ class FormFactor(object):
         A = np.array([x, y, z])
         B = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
-        X = np.linalg.solve(A, B)
+        try:
+            X = np.dot(np.linalg.pinv(A), B)
+        except:
+            X = None
         return X
 
     def project(self, v):
