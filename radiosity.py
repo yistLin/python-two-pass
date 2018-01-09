@@ -62,7 +62,7 @@ def radiosity(args):
     patch_list = meshing(patch_list, args.meshing_size)
     print('Total {} patches'.format(len(patch_list)))
 
-    ffs = FormFactor(args.hemicube_edge).calculate_from_factor(patch_list)
+    ffs = FormFactor(args, patch_list).calculate_form_factor(args.processes)
     np.save('ffs-{}-{}'.format(args.meshing_size, args.hemicube_edge), ffs)
 
     for i, p in enumerate(patch_list):
@@ -89,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--meshing_size', type=int, default=1, help='maximum size after meshing')
     parser.add_argument('--hemicube_edge', type=int, default=256, help='hemicube edge length')
     parser.add_argument('--iter_times', type=int, default=10, help='iterate times')
+    parser.add_argument('--processes', type=int, default=4, help='processes')
     args = parser.parse_args()
 
     radiosity(args)
