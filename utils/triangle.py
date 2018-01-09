@@ -105,3 +105,21 @@ class Triangle(object):
         v = Triangle.get_vector_np(v3, v1)
         vec = np.cross(u, v)
         return np.multiply(vec, 1 / np.linalg.norm(vec))
+
+    def set_radiosity(self, input):
+        if isinstance(input, dict):
+            self.radiosity = Triangle.Color(input['r'], input['g'], input['b'])
+        elif isinstance(input, (tuple, list, np.array)):
+            self.radiosity = Triangle.Color(input[0], input[1], input[2])
+
+    def get_emission(self):
+        return self.emission['r'], self.emission['g'], self.emission['b']
+
+    def get_reflectivity(self):
+        return self.reflectivity['r'], self.reflectivity['g'], self.reflectivity['b']
+
+    def get_radiosity(self):
+        return self.radiosity['r'], self.radiosity['g'], self.radiosity['b']
+
+    def get_radiosity_last(self):
+        return self.radiosity_last['r'], self.radiosity_last['g'], self.radiosity_last['b']
