@@ -13,20 +13,30 @@ from utils.teapot_def import teapot_data
 class Entity(object):
     """docstring for Entity"""
 
-    def __init__(self, spec=1.0, refl=0.0, refr=0.0):
+    def __init__(self, list_of_args, name="entity"):
         super(Entity, self).__init__()
 
-        self.emission = Triangle.Color()
-        self.reflectivity = Triangle.Color()
-        self.radiosity = Triangle.Color()
+        raytracing_attr = {
+            'entity': {'spec': 1.0, 'refl': 0.0, 'refr': 0.0},
+            'barrel': {'spec': 0.6, 'refl': 0.2, 'refr': 0.1},
+            'cuboid': {'spec': 1.0, 'refl': 0.1, 'refr': 0.0},
+            'globe': {'spec': 0.5, 'refl': 0.7, 'refr': 0.0},
+            'teapot': {'spec': 0.8, 'refl': 0.0, 'refr': 0.8},
+            'triangleset': {'spec': 0.2, 'refl': 0.2, 'refr': 0.2},
+        }
 
-        self._spec = spec
-        self._refl = refl
-        self._refr = refr
+        init_attr = list_of_args[0]  # get the first element to set attr
+        self.emission = Triangle.Color(*init_attr.get('emission', (0., 0., 0.)))
+        self.reflectivity = Triangle.Color(*init_attr.get('reflectivity', (0., 0., 0.)))
+        self.radiosity = Triangle.Color(*init_attr.get('radiosity', (0., 0., 0.)))
 
+        self._spec = init_attr.get('spec', raytracing_attr[name]['spec'])
+        self._refl = init_attr.get('refl', raytracing_attr[name]['refl'])
+        self._refr = init_attr.get('refr', raytracing_attr[name]['refr'])
+
+        self.name = name
         self.transform_matrix = TransformMatrix()
         self.triangle_set = TriangleSet()
-        self.name = "entity"
 
     def transform(self, trans):
         if isinstance(trans, dict):
@@ -45,19 +55,19 @@ class Entity(object):
     @staticmethod
     def create(entity_name, list_of_args):
         if entity_name == 'barrel':
-            b = Barrel()
+            b = Barrel(list_of_args)
             b.deserialize()
             return b
         elif entity_name == 'cuboid':
-            c = Cuboid()
+            c = Cuboid(list_of_args)
             c.deserialize()
             return c
         elif entity_name == 'globe':
-            g = Globe()
+            g = Globe(list_of_args)
             g.deserialize()
             return g
         elif entity_name == 'teapot':
-            t = Teapot()
+            t = Teapot(list_of_args)
             t.deserialize()
             return t
         elif entity_name == 'triangleset':
@@ -83,9 +93,8 @@ class Entity(object):
 class Barrel(Entity):
     """docstring for Barrel"""
 
-    def __init__(self, spec=0.6, refl=0.2, refr=0.1):
-        super(Barrel, self).__init__(spec, refl, refr)
-        self.name = "barrel"
+    def __init__(self, list_of_args):
+        super(Barrel, self).__init__(list_of_args, "barrel")
 
     def deserialize(self):
         self.trianglenize()
@@ -146,9 +155,8 @@ class Barrel(Entity):
 class Cuboid(Entity):
     """docstring for Cuboid"""
 
-    def __init__(self, spec=1.0, refl=0.1, refr=0.0):
-        super(Cuboid, self).__init__(spec, refl, refr)
-        self.name = "cuboid"
+    def __init__(self, list_of_args):
+        super(Cuboid, self).__init__(list_of_args, "cuboid")
 
     def deserialize(self):
         self.trianglenize()
@@ -215,9 +223,8 @@ class Cuboid(Entity):
 class Globe(Entity):
     """docstring for Globe"""
 
-    def __init__(self, spec=1.0, refl=0.7, refr=0.0):
-        super(Globe, self).__init__(spec, refl, refr)
-        self.name = "globe"
+    def __init__(self, list_of_args):
+        super(Globe, self).__init__(list_of_args, "globe")
 
     def deserialize(self):
         self.trianglenize()
@@ -287,9 +294,8 @@ class Globe(Entity):
 class Teapot(Entity):
     """docstring for Teapot"""
 
-    def __init__(self, spec=1.0, refl=0.0, refr=0.8):
-        super(Teapot, self).__init__(spec, refl, refr)
-        self.name = "teapot"
+    def __init__(self, list_of_args):
+        super(Teapot, self).__init__(list_of_args, "teapot")
         self.teapot_v = self.read('v')
         self.teapot_t = self.read('t')
 
