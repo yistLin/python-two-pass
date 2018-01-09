@@ -22,7 +22,7 @@ def xml_read_scene(fname):
                         if triangle.tag == 'triangle':
                             vs = [(p.get('x'), p.get('y'), p.get('z')) for p in triangle.iter('vertex')]
                         elif triangle.tag == 'trianglenext':
-                            vs = vs[:2] + [(p.get('x'), p.get('y'), p.get('z')) for p in triangle.iter('vertex')]
+                            vs = [vs[1]] + [(p.get('x'), p.get('y'), p.get('z')) for p in triangle.iter('vertex')] + [vs[2]]
                         else:
                             raise AttributeError("Tag doesn't match either triangle or trianglenext.")
 
