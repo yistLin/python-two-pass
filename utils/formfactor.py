@@ -43,7 +43,7 @@ class FormFactor(object):
                         z = 2 - y
                         y = 1.0
 
-                    self.delta_formfactor[i][j] = z / (np.pi * (x**2 + y**2 + z**2)) / self.surface_area
+                    self.delta_formfactor[i][j] = z / (np.pi * (x**2 + y**2 + z**2)**2) / self.surface_area
 
         # normalization
         self.delta_formfactor /= np.sum(self.delta_formfactor)
