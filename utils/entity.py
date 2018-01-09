@@ -137,7 +137,7 @@ class Barrel(Entity):
                 v['x'] = v['z'] = 0
                 v['y'] = four_vertex[i]['y']
                 t.vertex[i + 1 - j] = deepcopy(v)
-            self.add_triangle(t)
+            self.add_triangle(deepcopy(t))
 
     def add_quad(self, four_vertex):
         t = Triangle()
@@ -147,12 +147,12 @@ class Barrel(Entity):
         t.vertex[0] = deepcopy(four_vertex[0])
         t.vertex[1] = deepcopy(four_vertex[1])
         t.vertex[2] = deepcopy(four_vertex[2])
-        self.add_triangle(t)
+        self.add_triangle(deepcopy(t))
 
         # add triangle 2
         t.vertex[1] = deepcopy(four_vertex[2])
         t.vertex[2] = deepcopy(four_vertex[3])
-        self.add_triangle(t)
+        self.add_triangle(deepcopy(t))
 
 
 class Cuboid(Entity):
@@ -215,16 +215,12 @@ class Cuboid(Entity):
         t.vertex[0] = deepcopy(plane[0])
         t.vertex[1] = deepcopy(plane[1])
         t.vertex[2] = deepcopy(plane[2])
-        self.add_triangle(t)
-
-        t = Triangle()
-        self.set_triangle_properties(t)
+        self.add_triangle(deepcopy(t))
 
         # add triangle 2
-        t.vertex[0] = deepcopy(plane[0])
         t.vertex[1] = deepcopy(plane[2])
         t.vertex[2] = deepcopy(plane[3])
-        self.add_triangle(t)
+        self.add_triangle(deepcopy(t))
 
 
 class Globe(Entity):
@@ -290,17 +286,13 @@ class Globe(Entity):
         t.vertex[1] = deepcopy(four_vertex[1])
         t.vertex[2] = deepcopy(four_vertex[2])
         if t.vertex[0] != t.vertex[1]:  # bottom 0
-            self.add_triangle(t)
-
-        t = Triangle()
-        self.set_triangle_properties(t)
+            self.add_triangle(deepcopy(t))
 
         # add triangle 2
-        t.vertex[0] = deepcopy(four_vertex[0])
         t.vertex[1] = deepcopy(four_vertex[2])
         t.vertex[2] = deepcopy(four_vertex[3])
         if t.vertex[1] != t.vertex[2]:  # top 0
-            self.add_triangle(t)
+            self.add_triangle(deepcopy(t))
 
 
 class Teapot(Entity):
@@ -333,7 +325,7 @@ class Teapot(Entity):
                 t.vertex[j]['y'], t.vertex[j]['z'] = \
                     t.vertex[j]['z'], t.vertex[j]['y']
 
-            self.add_triangle(t)
+            self.add_triangle(deepcopy(t))
 
 
 class Tset(Entity):
