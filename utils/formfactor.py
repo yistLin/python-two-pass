@@ -139,7 +139,7 @@ class FormFactor(object):
         B = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
         try:
-            X = np.dot(np.linalg.pinv(A), B)
+            X = np.linalg.solve(A, B)
         except:
             X = None
         return X
