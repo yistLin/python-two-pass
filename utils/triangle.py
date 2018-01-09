@@ -20,6 +20,8 @@ class Triangle(object):
         self.spec = kwargs.get('spec', 0.)
         self.refl = kwargs.get('refl', 0.)
         self.refr = kwargs.get('refr', 0.)
+        self._vertices = np.array([Triangle.get_vertex_np(self.vertex[i])
+                                    for i in range(3)])
 
     def __repr__(self):
         ret = []
@@ -37,6 +39,12 @@ class Triangle(object):
             self.spec, self.refl, self.refr))
 
         return '\n'.join(ret)
+
+    @property
+    def vertices(self):
+        self._vertices = np.array([Triangle.get_vertex_np(self.vertex[i])
+                                    for i in range(3)])
+        return self._vertices
 
     @staticmethod
     def Vertex(x=0., y=0., z=0.):
