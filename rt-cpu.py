@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 # -*- coding: UTF-8 -*-
 
+import argparse
 import numpy as np
 from itertools import repeat
 from multiprocessing import Pool
@@ -12,6 +13,20 @@ try:
     from scipy.misc import imsave
 except:
     from matplotlib.pyplot.plt import imsave
+
+
+def parse_args():
+    parser = argparse.ArgumentParser('Ray tracer implemented in python.')
+    parser.add_argument('--input_file', type=str,
+            required=True, help='input XML file')
+    parser.add_argument('--output_file', type=str,
+            default='fig.png', help='output figure')
+    parser.add_argument('--max_depth', type=int,
+            default=3, help='max depth of recursion')
+    parser.add_argument('--img_size', nargs=2, type=int,
+            default=(100, 100), help='resolution of output figure')
+
+    return parser.parse_args()
 
 
 def normalize(x):
@@ -83,7 +98,8 @@ class RayTracer(object):
                 ray_drt.append(drt)
 
         with Pool(processes=4) as pool:
-            img = pool.starmap(self._trace_ray, zip(ray_ori, ray_drt, repeat(1.), repeat(max_depth)))
+            img = pool.starmap(self._trace_ray,
+                    zip(ray_ori, ray_drt, repeat(1.), repeat(max_depth)))
 
         img = np.array(img)
         img = np.clip(img, 0., 1.)
@@ -141,9 +157,11 @@ class RayTracer(object):
 
 
 if __name__ == '__main__':
-    import sys
+
+    args = parse_args()
+
     mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr = xml_read_tri(
-        sys.argv[1])
+            args.input_file)
 
     mat_p = mat_p.reshape(-1, 3)
     mat_p = rotate(mat_p, np.pi * -.42, 'x')
@@ -158,11 +176,11 @@ if __name__ == '__main__':
     tracer = RayTracer(mat_c, mat_p, mat_n, mat_e,
                        mat_spec, mat_refl, mat_refr)
 
-    img_size = (100, 100)
+    img_size = tuple(args.img_size)
     ori = np.array([40., 0., 0.], dtype=np.float32)
     dst = np.array([20., 0., 0.], dtype=np.float32)
     scene = (-15, -15, 10, 10)
 
-    img = tracer.trace(img_size, ori, dst, scene, max_depth=3)
-    imsave('fig.png', img)
+    img = tracer.trace(img_size, ori, dst, scene, max_depth=args.max_depth)
+    imsave(args.output_file, img)
 
