@@ -22,6 +22,7 @@ class Triangle(object):
         self.refr = kwargs.get('refr', 0.)
         self._vertices = np.array([Triangle.get_vertex_np(self.vertex[i])
                                     for i in range(3)])
+        self.name = kwargs.get('name', 'tri')
 
     def __repr__(self):
         ret = []
