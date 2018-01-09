@@ -55,7 +55,7 @@ def xml_read_scene(fname):
             list_of_args = []
             for entity in obj:
                 entity_name = 'triangleset'
-                attrs = {k: tuple(v.split(',')) for k, v in entity.items() if k != 'name'}
+                attrs = {k: tuple(map(float, v.split(','))) for k, v in entity.items() if k != 'name'}
                 if entity.tag == 'triangleset':
                     for triangle in entity:
                         if triangle.tag == 'triangle':
