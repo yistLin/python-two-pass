@@ -122,7 +122,6 @@ class FormFactor(object):
                     distance[~within] = np.inf
                     ff[np.argmin(distance)] += self.delta_formfactor[x][y]
 
-        print('ff', ff)
         return ff
 
     def get_transform_matrix(self, p):

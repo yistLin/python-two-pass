@@ -55,7 +55,7 @@ def radiosity(args):
     patch_list = []
     scene = xml_read_scene(args.input_file)
     for name, e in scene.items():
-        if 'xyplane' in name or name == 'light-source' or name == 'light-source:1':
+        if 'teapot' not in name:
             patch_list.extend(e.triangle_set.get_patches())
 
     print('Total {} patches'.format(len(patch_list)))
@@ -78,6 +78,8 @@ def radiosity(args):
             rad = np.multiply(rad, Triangle.get_color_np(p.reflectivity))
             rad = np.add(rad, Triangle.get_color_np(p.emission))
             patch_list[i].set_radiosity(rad)
+
+        XMLWriter.write('{}-step{}'.format(args.output_file, step + 1), patch_list)
 
     XMLWriter.write(args.output_file, patch_list)
 
