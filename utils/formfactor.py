@@ -101,7 +101,7 @@ class FormFactor(object):
             for x in range(self.edge2):
                 for y in range(self.edge2):
                     # Barycentric Technique
-                    pnt_int = np.array([x, y])
+                    pnt_int = np.array([x + 0.5, y + 0.5])
                     N_v2 = pnt_int - N_vs[:, 0]
                     d02 = inner1d(N_v0, N_v2)
                     d12 = inner1d(N_v1, N_v2)
