@@ -61,6 +61,7 @@ def radiosity(args):
     print('Total {} patches'.format(len(patch_list)))
 
     ffs = FormFactor(args.hemicube_edge).calculate_from_factor(patch_list)
+    np.save('ffs-{}-{}'.format(args.meshing_size, args.hemicube_edge), ffs)
 
     for i, p in enumerate(patch_list):
         patch_list[i].set_radiosity(patch_list[i].get_emission())

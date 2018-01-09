@@ -118,7 +118,7 @@ class FormFactor(object):
             print('ff', ff)
             ffs.append(ff)
 
-        return ffs
+        return np.array(ffs)
 
     def visibility_hemicube(self):
         return np.full((self.edge2, self.edge2), np.inf, dtype=np.dtype([('p', np.int32), ('d', np.float64)]))
@@ -140,6 +140,8 @@ class FormFactor(object):
         x = v[0]
         y = v[1]
         z = v[2]
+        if z < 0:
+            z = 0.0
 
         # side: right = 0, up = 1, left = 2, down = 3
         side = -1
