@@ -239,7 +239,6 @@ class Globe(Entity):
         RADIUS = 0.5
 
         lastV = [Triangle.Vertex() for i in range(PLANE_COUNT + 3)]
-        thisV, now = Triangle.Vertex(), Triangle.Vertex()
 
         four_vertex = [Triangle.Vertex() for i in range(4)]
         for j in range(PLANE_COUNT // 2 + 1):  # for j
@@ -248,6 +247,8 @@ class Globe(Entity):
             for i in range(PLANE_COUNT + 3):  # for i
                 angle2 = 2 * np.pi / PLANE_COUNT * i
                 x, z = z0 * np.cos(angle2), z0 * np.sin(angle2)
+
+                thisV, now = Triangle.Vertex(), Triangle.Vertex()
 
                 now['x'] = deepcopy(x)
                 now['y'] = deepcopy(x0)
@@ -289,7 +290,11 @@ class Globe(Entity):
         if t.vertex[0] != t.vertex[1]:  # bottom 0
             self.add_triangle(t)
 
+        t = Triangle()
+        self.set_triangle_properties(t)
+
         # add triangle 2
+        t.vertex[0] = deepcopy(four_vertex[0])
         t.vertex[1] = deepcopy(four_vertex[2])
         t.vertex[2] = deepcopy(four_vertex[3])
         if t.vertex[1] != t.vertex[2]:  # top 0
