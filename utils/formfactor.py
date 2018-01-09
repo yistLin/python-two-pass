@@ -65,24 +65,25 @@ class FormFactor(object):
                 v_ij = Triangle.get_vector_np(cj, ci)
                 n = Triangle.get_normal_vector_np(p_i)
                 if np.dot(v_ij, n) <= 0:
+                    N_vs.append(np.array([[-1., -1.], [-1., -2.], [-2., -1.]]))
+                    N_distance.append(np.inf)
                     continue
 
                 transform = self.get_transform_matrix(p_i)
-
                 v0 = np.dot(Triangle.get_vector_np(p_j.vertex[0], ci), transform)
                 v1 = np.dot(Triangle.get_vector_np(p_j.vertex[1], ci), transform)
                 v2 = np.dot(Triangle.get_vector_np(p_j.vertex[2], ci), transform)
-
                 v0 = self.project(v0)
                 v1 = self.project(v1)
                 v2 = self.project(v2)
-
                 vs = np.array([v0, v1, v2])
                 N_vs.append(vs)
 
                 N_distance.append(Triangle.distance(ci, cj))
 
             # collect all triangles and distances
+            assert len(N_vs) == patch_count
+            assert len(N_distance) == patch_count
             N_vs = np.array(N_vs)
             N_distance = np.array(N_distance)
 
