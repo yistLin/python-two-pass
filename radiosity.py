@@ -55,7 +55,7 @@ def radiosity(args):
     patch_list = []
     scene = xml_read_scene(args.input_file)
     for name, e in scene.items():
-        if name == 'xyplane' or name == 'light-source':
+        if 'xyplane' in name or name == 'light-source' or name == 'light-source:1':
             patch_list.extend(e.triangle_set.get_patches())
 
     print('Total {} patches'.format(len(patch_list)))
