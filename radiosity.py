@@ -8,6 +8,7 @@ import numpy as np
 
 from utils import FormFactor
 from utils import TriangleSet, Triangle
+from utils.reader import xml_read_scene
 
 def divide(p):
     to_patch_list = []
@@ -50,13 +51,10 @@ def meshing(from_patch_list, threshold):
     return to_patch_list
 
 def radiosity(args):
-    t = Triangle(v0=(0, 0, 0), v1=(100, 100, 100), v2=(0, 200, 200), emission=(1, 1, 1), reflectivity=(0.3, 0.3, 0.3), spec=1, refl=1, refr=1)
-    # t2 = Triangle(v0=(0, 0, 0), v1=(100, 100, 100), v2=(0, 0, 200), spec=1, refl=1, refr=1)
-    t2 = Triangle(v0=(0, 0, 0), v1=(0, 0, 200), v2=(100, 100, 100), reflectivity=(0.9, 0.9, 0.9), spec=1, refl=1, refr=1)
-    ts = TriangleSet()
-    ts.add_triangle(t)
-    ts.add_triangle(t2)
-    patch_list = ts.get_patches()
+    patch_list = []
+    scene = xml_read_scene(args.input_file)
+    for e in scene.values():
+        patch_list.extend(e.triangle_set.get_patches())
 
     print('Total {} patches'.format(len(patch_list)))
     patch_list = meshing(patch_list, args.meshing_size)
@@ -77,6 +75,8 @@ def radiosity(args):
             rad = np.multiply(rad, Triangle.get_color_np(p.reflectivity))
             rad = np.add(rad, Triangle.get_color_np(p.emission))
             patch_list[i].set_radiosity(rad)
+
+    # TODO xml write
 
 
 if __name__ == '__main__':
