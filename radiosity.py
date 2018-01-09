@@ -16,10 +16,10 @@ def divide(p):
     m1 = Triangle.center(p.vertex[1], p.vertex[2])
     m2 = Triangle.center(p.vertex[2], p.vertex[0])
 
-    to_patch_list.append(Triangle(v0=(p.vertex[0]['x'], p.vertex[0]['y'], p.vertex[0]['z']), v1=(m0['x'], m0['y'], m0['z']), v2=(m2['x'], m2['y'], m2['z']), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
-    to_patch_list.append(Triangle(v0=(p.vertex[1]['x'], p.vertex[1]['y'], p.vertex[1]['z']), v1=(m1['x'], m1['y'], m1['z']), v2=(m0['x'], m0['y'], m0['z']), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
-    to_patch_list.append(Triangle(v0=(p.vertex[2]['x'], p.vertex[2]['y'], p.vertex[2]['z']), v1=(m2['x'], m2['y'], m2['z']), v2=(m1['x'], m1['y'], m1['z']), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
-    to_patch_list.append(Triangle(v0=(m0['x'], m0['y'], m0['z']), v1=(m1['x'], m1['y'], m1['z']), v2=(m2['x'], m2['y'], m2['z']), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.append(Triangle(v0=(p.vertex[0]['x'], p.vertex[0]['y'], p.vertex[0]['z']), v1=(m0['x'], m0['y'], m0['z']), v2=(m2['x'], m2['y'], m2['z']), emission=p.get_emission(), reflectivity=p.get_reflectivity(), spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.append(Triangle(v0=(p.vertex[1]['x'], p.vertex[1]['y'], p.vertex[1]['z']), v1=(m1['x'], m1['y'], m1['z']), v2=(m0['x'], m0['y'], m0['z']), emission=p.get_emission(), reflectivity=p.get_reflectivity(), spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.append(Triangle(v0=(p.vertex[2]['x'], p.vertex[2]['y'], p.vertex[2]['z']), v1=(m2['x'], m2['y'], m2['z']), v2=(m1['x'], m1['y'], m1['z']), emission=p.get_emission(), reflectivity=p.get_reflectivity(), spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.append(Triangle(v0=(m0['x'], m0['y'], m0['z']), v1=(m1['x'], m1['y'], m1['z']), v2=(m2['x'], m2['y'], m2['z']), emission=p.get_emission(), reflectivity=p.get_reflectivity(), spec=p.spec, refl=p.refl, refr=p.refr))
 
     return to_patch_list
 
@@ -52,7 +52,7 @@ def meshing(from_patch_list, threshold):
 def radiosity(args):
     t = Triangle(v0=(0, 0, 0), v1=(100, 100, 100), v2=(0, 200, 200), emission=(1, 1, 1), reflectivity=(0.3, 0.3, 0.3), spec=1, refl=1, refr=1)
     # t2 = Triangle(v0=(0, 0, 0), v1=(100, 100, 100), v2=(0, 0, 200), spec=1, refl=1, refr=1)
-    t2 = Triangle(v0=(0, 0, 0), v1=(0, 0, 200), v2=(100, 100, 100), spec=1, refl=1, refr=1)
+    t2 = Triangle(v0=(0, 0, 0), v1=(0, 0, 200), v2=(100, 100, 100), reflectivity=(0.9, 0.9, 0.9), spec=1, refl=1, refr=1)
     ts = TriangleSet()
     ts.add_triangle(t)
     ts.add_triangle(t2)
@@ -65,7 +65,7 @@ def radiosity(args):
     ffs = FormFactor(args.hemicube_edge).calculate_from_factor(patch_list)
 
     for i, p in enumerate(patch_list):
-        patch_list[i].radiosity = patch_list[i].emission
+        patch_list[i].set_radiosity(patch_list[i].get_emission())
 
     patch_count = len(patch_list)
     for step in range(args.iter_times):
@@ -76,7 +76,7 @@ def radiosity(args):
             rad = np.sum(np.multiply(b, ffs[i][:, np.newaxis]), axis=0)
             rad = np.multiply(rad, Triangle.get_color_np(p.reflectivity))
             rad = np.add(rad, Triangle.get_color_np(p.emission))
-            patch_list[i].radiosity = Triangle.set_color_from_np(rad)
+            patch_list[i].set_radiosity(rad)
 
 
 if __name__ == '__main__':
