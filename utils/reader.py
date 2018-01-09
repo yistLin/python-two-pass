@@ -99,7 +99,7 @@ def xml_read_scene(fname):
                     obj_trans[name] = []
                     while cidx != -1:
                         t, cidx = trans[cidx]
-                        obj_trans[name].append((t.tag, t.attrib))
+                        obj_trans[name].append((t.tag, {k: float(v) for k, v in t.items()}))
 
                 stack.append((elem, idx))
                 trans[idx] = (elem, pidx)
