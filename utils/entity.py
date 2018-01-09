@@ -253,8 +253,9 @@ class Globe(Entity):
                 now['z'] = deepcopy(z)
 
                 if j == 0:
-                    lastV[i]['x'] = lastV[i]['z'] = 0
-                    lastV[i]['y'] = RADIUS
+                    lastV[i]['x'] = 0
+                    lastV[i]['y'] = deepcopy(RADIUS)
+                    lastV[i]['z'] = 0
                 else:  # j != 0
                     if i == 0:
                         thisV = deepcopy(now)
@@ -274,8 +275,8 @@ class Globe(Entity):
                         if (i != PLANE_COUNT+1+1) and (i != 1):
                             self.add_quad(four_vertex)
 
-                        lastV[i-1] = thisV
-                        thisV = now
+                        lastV[i-1] = deepcopy(thisV)
+                        thisV = deepcopy(now)
 
     def add_quad(self, four_vertex):
         t = Triangle()
