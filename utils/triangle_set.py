@@ -20,6 +20,10 @@ class TriangleSet(object):
     def __next__(self):
         return next(self.triangle_set)
 
+    def __repr__(self):
+        for t in self.triangle_set:
+            print(t)
+
     def add_triangle(self, t):
         self.triangle_set.append(t)
 
