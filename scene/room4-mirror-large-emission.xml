@@ -92,7 +92,7 @@
 			<cuboid reflectivity='.05,.05,.05'/>
 		</objectdef>
 		<objectdef name="biglamp_bulb">
-			<globe emission='90,90,90'/>
+			<globe emission='5,5,5'/>
 		</objectdef>
 		<objectdef name="biglamp_shader">
 			<triangleset reflectivity='.15,.15,.15'>
@@ -345,7 +345,7 @@
 
 		</objectdef>
 		<objectdef name="lamp_bulb">
-			<globe emission='400,400,300'/>
+			<globe emission='3,3,3'/>
 		</objectdef>
 		<objectdef name="lamp_strap">
 			<barrel reflectivity='.15,.15,.15'/>
