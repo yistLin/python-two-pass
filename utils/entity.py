@@ -28,6 +28,20 @@ class Entity(object):
         self.triangle_set = TriangleSet()
         self.name = "entity"
 
+    def transform(self, trans):
+        if isinstance(trans, dict):
+            trans = [trans]
+
+        for op, param in trans:
+            if op == 'rotate':
+                self.transform_matrix.rotate(**param)
+            elif op == 'translate':
+                self.transform_matrix.translate(**param)
+            elif op == 'scale':
+                self.transform_matrix.scale(**param)
+
+        self.triangle_set = self.transform_matrix.transform(self.triangle_set)
+
     @staticmethod
     def create(entity_name, list_of_args):
         if entity_name == 'barrel':
@@ -62,8 +76,7 @@ class Entity(object):
         t.refr = self._refr
 
     def add_triangle(self, t):
-        for i in range(3):
-            t.vertex[i] = self.transform_matrix.transform(t.vertex[i])
+        t = self.transform_matrix.transform(t)
         self.triangle_set.add_triangle(t)
 
 
