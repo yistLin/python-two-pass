@@ -32,6 +32,9 @@ def xml_read_scene(fname):
                     entity_name = entity.tag
                     list_of_args.append(attrs)
 
+            if 'mirror' in obj_name:
+                for i in range(len(list_of_args)):
+                    list_of_args[i] = {**list_of_args[i], 'refl': 0.95}
             scene[obj_name] = Entity.create(entity_name, list_of_args, obj_name)
 
         return scene
