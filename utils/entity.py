@@ -214,7 +214,11 @@ class Cuboid(Entity):
         t.vertex[2] = deepcopy(plane[2])
         self.add_triangle(t)
 
+        t = Triangle()
+        self.set_triangle_properties(t)
+
         # add triangle 2
+        t.vertex[0] = deepcopy(plane[0])
         t.vertex[1] = deepcopy(plane[2])
         t.vertex[2] = deepcopy(plane[3])
         self.add_triangle(t)
