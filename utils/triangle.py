@@ -22,7 +22,7 @@ class Triangle(object):
         self.emission = np.array(kwargs.get('emission', np.zeros(3)))
         self.reflectivity = np.array(kwargs.get('reflectivity', np.zeros(3)))
         self.radiosity = np.array(kwargs.get('radiosity', np.zeros(3)))
-        self.radiosity_last = np.array(kwargs.get('radiosity_last', np.zeros(3)))
+
         self.spec = 0.
         self.refl = 0.
         self.refr = 0.
@@ -34,7 +34,6 @@ class Triangle(object):
         ret.append("Emission: {}".format(self.emission))
         ret.append("Reflectivity: {}".format(self.reflectivity))
         ret.append("Radiosity: {}".format(self.radiosity))
-        ret.append("RadiosityLast: {}".format(self.radiosity_last))
         ret.append("spec: {}, refl: {}, refr: {}".format(
             self.spec, self.refl, self.refr))
 
