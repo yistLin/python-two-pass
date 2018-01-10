@@ -37,9 +37,9 @@ class XMLWriter(object):
                           '</triangle>')
 
             for tri in tris:
-                emission = list(tri.get_emission())
-                reflectivity = list(tri.get_reflectivity())
-                radiosity = list(tri.get_radiosity())
+                emission = tri.emission
+                reflectivity = tri.reflectivity
+                radiosity = tri.radiosity
                 spec = tri.spec
                 refl = tri.refl
                 refr = tri.refr
