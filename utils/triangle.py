@@ -3,51 +3,124 @@
 
 import numpy as np
 
+
 class Triangle(object):
-    def __init__(self, a, b, c, fcolor, bcolor):
-        assert len(a) == 3 and len(b) == 3 and len(c) == 3 and \
-               len(fcolor) == 3 and len(bcolor) == 3
+    """docstring for Triangle"""
 
-        # 3 points
-        self.p = np.array([a, b, c], dtype=np.float32)
+    def __init__(self, **kwargs):
+        self.vertex = [Triangle.Vertex(*kwargs.get('v0', (0., 0., 0.))),
+                       Triangle.Vertex(*kwargs.get('v1', (0., 0., 0.))),
+                       Triangle.Vertex(*kwargs.get('v2', (0., 0., 0.)))]
+        self.emission = Triangle.Color(*kwargs.get('emission', (0., 0., 0.)))
+        self.reflectivity = Triangle.Color(
+            *kwargs.get('reflectivity', (0., 0., 0.)))
+        self.radiosity = Triangle.Color(*kwargs.get('radiosity', (0., 0., 0.)))
+        self.radiosity_last = Triangle.Color(
+            *kwargs.get('radiosity_last', (0., 0., 0.)))
+        self.spec = kwargs.get('spec', 0.)
+        self.refl = kwargs.get('refl', 0.)
+        self.refr = kwargs.get('refr', 0.)
+        self._vertices = np.array([Triangle.get_vertex_np(self.vertex[i])
+                                    for i in range(3)])
+        self.name = kwargs.get('name', 'tri')
 
-        # front and back colors
-        self.fcolor = np.array(fcolor, dtype=int)
-        self.bcolor = np.array(bcolor, dtype=int)
+    def __repr__(self):
+        ret = []
+        ret.append("Vertex: ({}, {}, {}), ({}, {}, {}), ({}, {}, {})".format(
+            self.vertex[0]['x'], self.vertex[0]['y'], self.vertex[0]['z'],
+            self.vertex[1]['x'], self.vertex[1]['y'], self.vertex[1]['z'],
+            self.vertex[2]['x'], self.vertex[2]['y'], self.vertex[2]['z']))
+        ret.append("Emission: {}".format(tuple(self.emission.values())))
+        ret.append("Reflectivity: {}".format(
+            tuple(self.reflectivity.values())))
+        ret.append("Radiosity: {}".format(tuple(self.radiosity.values())))
+        ret.append("RadiosityLast: {}".format(
+            tuple(self.radiosity_last.values())))
+        ret.append("spec: {}, refl: {}, refr: {}".format(
+            self.spec, self.refl, self.refr))
 
-        # normal vector
-        self.n = np.cross(self.p[0]-self.p[1], self.p[1]-self.p[2])
-        self.n = self.n / np.linalg.norm(self.n)
+        return '\n'.join(ret)
 
-    def intersect(self, ray_ori, ray_drt):
-        denom = np.dot(ray_drt, self.n)
+    @property
+    def vertices(self):
+        self._vertices = np.array([Triangle.get_vertex_np(self.vertex[i])
+                                    for i in range(3)])
+        return self._vertices
 
-        # ignore if the angle between ray and plane is too small
-        if np.abs(denom) < 1e-6:
-            return np.inf, None
+    @staticmethod
+    def Vertex(x=0., y=0., z=0.):
+        return {'x': x, 'y': y, 'z': z}
 
-        # distance to the plane
-        dist = np.dot(self.p[0] - ray_ori, self.n) / denom
-        if dist < 0:
-            return np.inf, None
+    @staticmethod
+    def get_vertex_np(v):
+        return np.array([v['x'], v['y'], v['z']])
 
-        # intersection point on the plane
-        pnt_int = ray_ori + dist * ray_drt
+    @staticmethod
+    def Color(r=0., g=0., b=0.):
+        return {'r': r, 'g': g, 'b': b}
 
-        # intersection point within triangle or not
-        if not self._within(pnt_int):
-            return np.inf, None
+    @staticmethod
+    def get_color_np(c):
+        return np.array([c['r'], c['g'], c['b']])
 
-        return dist, pnt_int
+    @staticmethod
+    def set_color_from_np(nparray):
+        return Triangle.Color(nparray[0], nparray[1], nparray[2])
 
-    def _within(self, p):
+    @staticmethod
+    def Vector(ix=0., iy=0., iz=0.):
+        return {'dx': ix, 'dy': iy, 'dz': iz}
 
-        def same_side(p1, p2, a, b):
-            cp1 = np.cross(b-a, p1-a)
-            cp2 = np.cross(b-a, p2-a)
-            return np.dot(cp1, cp2) >= 0
+    @staticmethod
+    def get_vector_np(v1, v2):
+        dx = v1['x'] - v2['x']
+        dy = v1['y'] - v2['y']
+        dz = v1['z'] - v2['z']
+        return np.array([dx, dy, dz])
 
-        return same_side(p, self.p[0], self.p[1], self.p[2]) and \
-               same_side(p, self.p[1], self.p[0], self.p[2]) and \
-               same_side(p, self.p[2], self.p[0], self.p[1])
+    @staticmethod
+    def distance(v1, v2):
+        v = Triangle.get_vector_np(v1, v2)
+        return np.sqrt(v[0]**2 + v[1]**2 + v[2]**2)
 
+    @staticmethod
+    def center(v1, v2):
+        x = (v1['x'] + v2['x']) / 2
+        y = (v1['y'] + v2['y']) / 2
+        z = (v1['z'] + v2['z']) / 2
+        return Triangle.Vertex(float(x), float(y), float(z))
+
+    @staticmethod
+    def center_of(t):
+        x = (t.vertex[0]['x'] + t.vertex[1]['x'] + t.vertex[2]['x']) / 3
+        y = (t.vertex[0]['y'] + t.vertex[1]['y'] + t.vertex[2]['y']) / 3
+        z = (t.vertex[0]['z'] + t.vertex[1]['z'] + t.vertex[2]['z']) / 3
+        return Triangle.Vertex(float(x), float(y), float(z))
+
+    @staticmethod
+    def get_normal_vector_np(t):
+        v1 = t.vertex[0]
+        v2 = t.vertex[1]
+        v3 = t.vertex[2]
+        u = Triangle.get_vector_np(v2, v1)
+        v = Triangle.get_vector_np(v3, v1)
+        vec = np.cross(u, v)
+        return np.multiply(vec, 1 / np.linalg.norm(vec))
+
+    def set_radiosity(self, input):
+        if isinstance(input, dict):
+            self.radiosity = Triangle.Color(input['r'], input['g'], input['b'])
+        elif isinstance(input, (tuple, list, np.ndarray)):
+            self.radiosity = Triangle.Color(input[0], input[1], input[2])
+
+    def get_emission(self):
+        return self.emission['r'], self.emission['g'], self.emission['b']
+
+    def get_reflectivity(self):
+        return self.reflectivity['r'], self.reflectivity['g'], self.reflectivity['b']
+
+    def get_radiosity(self):
+        return self.radiosity['r'], self.radiosity['g'], self.radiosity['b']
+
+    def get_radiosity_last(self):
+        return self.radiosity_last['r'], self.radiosity_last['g'], self.radiosity_last['b']

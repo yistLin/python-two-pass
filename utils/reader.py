@@ -3,8 +3,89 @@
 
 import numpy as np
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 
-from utils import Triangle
+from utils.entity import Entity
+
+
+def xml_read_scene(fname):
+    def read_head(head):
+        scene = {}
+        for obj in head.iter('objectdef'):
+            obj_name = obj.attrib['name']
+            list_of_args = []
+            for entity in obj:
+                entity_name = 'triangleset'
+                attrs = {k: tuple(map(float, v.split(','))) for k, v in entity.items() if k != 'name'}
+                if entity.tag == 'triangleset':
+                    for triangle in entity:
+                        if triangle.tag == 'triangle':
+                            vs = [(p.get('x'), p.get('y'), p.get('z')) for p in triangle.iter('vertex')]
+                        elif triangle.tag == 'trianglenext':
+                            vs = [vs[1]] + [(p.get('x'), p.get('y'), p.get('z')) for p in triangle.iter('vertex')] + [vs[2]]
+                        else:
+                            raise AttributeError("Tag doesn't match either triangle or trianglenext.")
+
+                        vertex = {'v{}'.format(v): p for v, p in enumerate(vs)}
+                        list_of_args.append({**vertex, **attrs})
+                else:
+                    entity_name = entity.tag
+                    list_of_args.append(attrs)
+
+            if 'mirror' in obj_name:
+                for i in range(len(list_of_args)):
+                    list_of_args[i] = {**list_of_args[i], 'refl': 0.95}
+            scene[obj_name] = Entity.create(entity_name, list_of_args, obj_name)
+
+        return scene
+
+    def read_body(body, scene):
+        stack = [(body, -1)]
+        idx = 0
+        trans = {}
+
+        obj_cnt = {obj_name: 0 for obj_name in scene.keys()}
+        obj_trans = {}
+
+        # perform DFS on XML's element tree
+        while stack:
+            node, pidx = stack.pop()
+
+            for elem in reversed(node):
+                if elem.tag == 'object':
+                    cidx = pidx
+                    obj_name = elem.attrib['name']
+                    suffix = obj_cnt[obj_name]
+                    name = '{}:{}'.format(obj_name, suffix) if suffix else obj_name
+                    if suffix:
+                        scene[name] = deepcopy(scene[obj_name])
+                    obj_cnt[obj_name] += 1
+                    obj_trans[name] = []
+                    while cidx != -1:
+                        t, cidx = trans[cidx]
+                        obj_trans[name].append((t.tag, {k: float(v) for k, v in t.items()}))
+
+                stack.append((elem, idx))
+                trans[idx] = (elem, pidx)
+                idx += 1
+
+        for obj_name in obj_trans.keys():
+            scene[obj_name].transform(obj_trans[obj_name][::-1])
+
+        return scene
+
+    # parse XML
+    tree = ET.parse(fname)
+    root = tree.getroot()
+
+    # get objects definitions & objects translation+rotation info
+    head = root.find('head')
+    body = root.find('body')
+
+    scene = read_head(head)
+    scene = read_body(body, scene)
+
+    return scene
 
 
 def xml_read_tri(fname):
@@ -48,11 +129,11 @@ def xml_read_tri(fname):
             mat_p.append(vertices)
 
     return np.array(mat_c, dtype=np.float32), \
-           np.array(mat_p, dtype=np.float32), \
-           np.array(mat_e, dtype=np.float32), \
-           np.array(mat_spec, dtype=np.float32), \
-           np.array(mat_refl, dtype=np.float32), \
-           np.array(mat_refr, dtype=np.float32)
+        np.array(mat_p, dtype=np.float32), \
+        np.array(mat_e, dtype=np.float32), \
+        np.array(mat_spec, dtype=np.float32), \
+        np.array(mat_refl, dtype=np.float32), \
+        np.array(mat_refr, dtype=np.float32)
 
 
 def read_tri(fname):
@@ -79,4 +160,3 @@ if __name__ == '__main__':
 
     for tri in tris:
         print(tri.fcolor, tri.n)
-
