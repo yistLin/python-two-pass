@@ -1,4 +1,4 @@
-from utils.triangle import Triangle
+from utils.triangle import Triangle, distance, vectorize
 from utils.triangle_set import TriangleSet
 from utils.transform_matrix import TransformMatrix
 from utils.reader import XMLReader
