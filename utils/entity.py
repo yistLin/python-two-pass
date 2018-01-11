@@ -74,7 +74,8 @@ class Entity(object):
             elif op == 'scale':
                 self.transform_matrix.scale(**param)
 
-        self.triangle_set = self.transform_matrix.transform(self.triangle_set)
+        for i in range(len(self.triangle_set)):
+            self.triangle_set[i].vertices = self.transform_matrix.transform(self.triangle_set[i].vertices)
 
     def trianglenize(self):
         raise NotImplementedError("trianglenize() should be implemented in class inheriting Enity")
@@ -89,7 +90,7 @@ class Entity(object):
         t.refr = self._refr
 
     def add_triangle(self, t):
-        t = self.transform_matrix.transform(t)
+        t.vertices = self.transform_matrix.transform(t.vertices)
         self.triangle_set.add_triangle(t)
 
 
@@ -218,10 +219,10 @@ class Globe(Entity):
                 x, z = z0 * np.cos(angle2), z0 * np.sin(angle2)
 
                 thisV = np.zeros(3)
-                now = np.array(x, x0, z)
+                now = np.array([x, x0, z])
 
                 if j == 0:
-                    lastV[i] = np.array(0, RADIUS, 0)
+                    lastV[i] = np.array([0, RADIUS, 0])
                 else:  # j != 0
                     if i == 0:
                         thisV = np.array(now)
@@ -245,12 +246,12 @@ class Globe(Entity):
 
         # add triangle 1
         t.vertices = np.array(four_vertices[:-1])
-        if t.vertices[0] != t.vertices[1]:  # bottom 0
+        if not np.array_equal(t.vertices[0], t.vertices[1]):  # bottom 0
             self.add_triangle(deepcopy(t))
 
         # add triangle 2
-        t.vertices[-2:] = np.array(plane[2:])
-        if t.vertices[1] != t.vertices[2]:  # top 0
+        t.vertices[-2:] = np.array(four_vertices[2:])
+        if not np.array_equal(t.vertices[1], t.vertices[2]):  # top 0
             self.add_triangle(deepcopy(t))
 
 

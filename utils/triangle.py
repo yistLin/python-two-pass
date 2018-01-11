@@ -11,7 +11,6 @@ class Triangle(object):
         emission: np.ndarray, shape=(3,)
         reflectivity: np.ndarray, shape=(3,)
         radiosity: np.ndarray, shape=(3,)
-        radiosity_last: np.ndarray, shape=(3,)
         spec: float
         refl: float
         refr: float

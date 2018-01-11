@@ -8,7 +8,7 @@ import numpy as np
 
 from utils import FormFactor
 from utils import TriangleSet, Triangle, distance
-from utils.reader import xml_read_scene
+from utils.reader import XMLReader
 from utils import XMLWriter
 
 
@@ -39,9 +39,9 @@ def meshing(from_patch_list, threshold):
     while not q.empty():
         p = q.get()
 
-        s0 = distance(p.vertex[0], p.vertex[1])
-        s1 = distance(p.vertex[1], p.vertex[2])
-        s2 = distance(p.vertex[2], p.vertex[0])
+        s0 = distance(p.vertices[0], p.vertices[1])
+        s1 = distance(p.vertices[1], p.vertices[2])
+        s2 = distance(p.vertices[2], p.vertices[0])
 
         s = (s0 + s1 + s2) / 2
 
@@ -57,7 +57,7 @@ def meshing(from_patch_list, threshold):
 
 def radiosity(args):
     patch_list = TriangleSet()
-    scene = xml_read_scene(args.input_file)
+    scene = XMLReader.read_scene(args.input_file)
     for name, e in scene.items():
         if 'teapot' not in name:
             patch_list.add_triangle_set(e.triangle_set)
