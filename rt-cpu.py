@@ -5,7 +5,7 @@ import numpy as np
 from multiprocessing import Pool
 from numpy.core.umath_tests import inner1d
 
-from utils import xml_read_tri
+from utils import XMLReader
 
 try:
     from scipy.misc import imsave
@@ -116,7 +116,7 @@ class RayTracer(object):
 
 if __name__ == '__main__':
     import sys
-    mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr = xml_read_tri(
+    mat_c, mat_p, mat_e, mat_spec, mat_refl, mat_refr = XMLReader.read_tri(
         sys.argv[1])
 
     mat_p = mat_p.reshape(-1, 3)

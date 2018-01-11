@@ -81,9 +81,9 @@ class FormFactor(object):
                 N_vs.append(np.array([[-1., -1.], [-1., -2.], [-2., -1.]]))
                 N_distance.append(np.inf)
                 continue
-            v0 = np.dot(vectorize(ci, p_j.vertex[0]), transform)
-            v1 = np.dot(vectorize(ci, p_j.vertex[1]), transform)
-            v2 = np.dot(vectorize(ci, p_j.vertex[2]), transform)
+            v0 = np.dot(vectorize(ci, p_j.vertices[0]), transform)
+            v1 = np.dot(vectorize(ci, p_j.vertices[1]), transform)
+            v2 = np.dot(vectorize(ci, p_j.vertices[2]), transform)
             v0 = self.project(v0)
             v1 = self.project(v1)
             v2 = self.project(v2)
@@ -123,15 +123,15 @@ class FormFactor(object):
                 # inside triangle
                 within = (u >= 0.) & (v >= 0.) & (u + v < 1.)
                 if within.any():
-                    distance = N_distance.copy()
-                    distance[~within] = np.inf
-                    ff[np.argmin(distance)] += self.delta_formfactor[x][y]
+                    tmp_distance = N_distance.copy()
+                    tmp_distance[~within] = np.inf
+                    ff[np.argmin(tmp_distance)] += self.delta_formfactor[x][y]
 
         return ff
 
     def get_transform_matrix(self, p):
         c = p.center()
-        x = vectorize(c, p.vertex[0])
+        x = vectorize(c, p.vertices[0])
         x = np.multiply(x, 1 / np.linalg.norm(x))
         z = p.normal
         y = np.cross(z, x)

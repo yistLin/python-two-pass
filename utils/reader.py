@@ -35,7 +35,7 @@ class XMLReader(object):
                         entity_name = entity.tag
                         list_of_args.append(attrs)
 
-                scene[obj_name] = Entity.create(entity_name, list_of_args)
+                scene[obj_name] = Entity.create(entity_name, list_of_args, obj_name)
 
             return scene
 
