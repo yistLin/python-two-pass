@@ -7,23 +7,26 @@ import queue
 import numpy as np
 
 from utils import FormFactor
-from utils import TriangleSet, Triangle
+from utils import TriangleSet, Triangle, distance
 from utils.reader import xml_read_scene
 from utils import XMLWriter
 
+
 def divide(p):
-    to_patch_list = []
+    to_patch_list = TriangleSet()
 
-    m0 = Triangle.center(p.vertex[0], p.vertex[1])
-    m1 = Triangle.center(p.vertex[1], p.vertex[2])
-    m2 = Triangle.center(p.vertex[2], p.vertex[0])
+    m = p.edge_centers()
+    m0 = m[0]
+    m1 = m[1]
+    m2 = m[2]
 
-    to_patch_list.append(Triangle(v0=(p.vertex[0]['x'], p.vertex[0]['y'], p.vertex[0]['z']), v1=(m0['x'], m0['y'], m0['z']), v2=(m2['x'], m2['y'], m2['z']), emission=p.get_emission(), reflectivity=p.get_reflectivity(), spec=p.spec, refl=p.refl, refr=p.refr))
-    to_patch_list.append(Triangle(v0=(p.vertex[1]['x'], p.vertex[1]['y'], p.vertex[1]['z']), v1=(m1['x'], m1['y'], m1['z']), v2=(m0['x'], m0['y'], m0['z']), emission=p.get_emission(), reflectivity=p.get_reflectivity(), spec=p.spec, refl=p.refl, refr=p.refr))
-    to_patch_list.append(Triangle(v0=(p.vertex[2]['x'], p.vertex[2]['y'], p.vertex[2]['z']), v1=(m2['x'], m2['y'], m2['z']), v2=(m1['x'], m1['y'], m1['z']), emission=p.get_emission(), reflectivity=p.get_reflectivity(), spec=p.spec, refl=p.refl, refr=p.refr))
-    to_patch_list.append(Triangle(v0=(m0['x'], m0['y'], m0['z']), v1=(m1['x'], m1['y'], m1['z']), v2=(m2['x'], m2['y'], m2['z']), emission=p.get_emission(), reflectivity=p.get_reflectivity(), spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.add_triangle(Triangle(vertices=np.array([p.vertices[0], m0, m2]), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.add_triangle(Triangle(vertices=np.array([p.vertices[1], m1, m0]), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.add_triangle(Triangle(vertices=np.array([p.vertices[2], m2, m1]), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
+    to_patch_list.add_triangle(Triangle(vertices=np.array(m), emission=p.emission, reflectivity=p.reflectivity, spec=p.spec, refl=p.refl, refr=p.refr))
 
     return to_patch_list
+
 
 def meshing(from_patch_list, threshold):
     print("meshing... with threshold {}".format(threshold))
@@ -32,13 +35,13 @@ def meshing(from_patch_list, threshold):
     for p in from_patch_list:
         q.put(p)
 
-    to_patch_list = []
+    to_patch_list = TriangleSet()
     while not q.empty():
         p = q.get()
 
-        s0 = Triangle.distance(p.vertex[0], p.vertex[1])
-        s1 = Triangle.distance(p.vertex[1], p.vertex[2])
-        s2 = Triangle.distance(p.vertex[2], p.vertex[0])
+        s0 = distance(p.vertex[0], p.vertex[1])
+        s1 = distance(p.vertex[1], p.vertex[2])
+        s2 = distance(p.vertex[2], p.vertex[0])
 
         s = (s0 + s1 + s2) / 2
 
@@ -47,16 +50,17 @@ def meshing(from_patch_list, threshold):
             for d_p in divide(p):
                 q.put(d_p)
         else:
-            to_patch_list.append(p)
+            to_patch_list.add_triangle(p)
 
     return to_patch_list
 
+
 def radiosity(args):
-    patch_list = []
+    patch_list = TriangleSet()
     scene = xml_read_scene(args.input_file)
     for name, e in scene.items():
         if 'teapot' not in name:
-            patch_list.extend(e.triangle_set.get_patches())
+            patch_list.add_triangle_set(e.triangle_set)
 
     print('Total {} patches'.format(len(patch_list)))
     patch_list = meshing(patch_list, args.meshing_size)
@@ -69,18 +73,18 @@ def radiosity(args):
         ffs = np.load(args.load_ffs)
 
     for i, p in enumerate(patch_list):
-        patch_list[i].set_radiosity(patch_list[i].get_emission())
+        patch_list[i].radiosity = np.array(patch_list[i].emission)
 
     patch_count = len(patch_list)
     for step in range(args.iter_times):
         print('step {}/{}'.format(step + 1, args.iter_times))
-        b = np.array([Triangle.get_color_np(p.radiosity) for p in patch_list])
+        b = np.array([p.radiosity for p in patch_list])
 
         for i, p in enumerate(patch_list):
             rad = np.sum(np.multiply(b, ffs[i][:, np.newaxis]), axis=0)
-            rad = np.multiply(rad, Triangle.get_color_np(p.reflectivity))
-            rad = np.add(rad, Triangle.get_color_np(p.emission))
-            patch_list[i].set_radiosity(rad)
+            rad = np.multiply(rad, p.reflectivity)
+            rad = np.add(rad, p.emission)
+            patch_list[i].radiosity = np.array(rad)
 
         XMLWriter.write('{}-step{}'.format(args.output_file, step + 1), patch_list)
 
