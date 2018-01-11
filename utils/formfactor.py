@@ -6,7 +6,8 @@ from multiprocessing import Pool
 import numpy as np
 from numpy.core.umath_tests import inner1d
 
-from utils.triangle import Triangle
+from utils.triangle import Triangle, vectorize, distance
+
 
 class FormFactor(object):
     def __init__(self, args, patch_list):
@@ -65,11 +66,11 @@ class FormFactor(object):
                 N_distance.append(np.inf)
                 continue
 
-            ci = Triangle.center_of(p_i)
-            cj = Triangle.center_of(p_j)
+            ci = p_i.center()
+            cj = p_j.center()
 
-            v_ij = Triangle.get_vector_np(cj, ci)
-            n = Triangle.get_normal_vector_np(p_i)
+            v_ij = vectorize(ci, cj)
+            n = p_i.normal
             if np.dot(v_ij, n) <= 0:
                 N_vs.append(np.array([[-1., -1.], [-1., -2.], [-2., -1.]]))
                 N_distance.append(np.inf)
@@ -80,16 +81,16 @@ class FormFactor(object):
                 N_vs.append(np.array([[-1., -1.], [-1., -2.], [-2., -1.]]))
                 N_distance.append(np.inf)
                 continue
-            v0 = np.dot(Triangle.get_vector_np(p_j.vertex[0], ci), transform)
-            v1 = np.dot(Triangle.get_vector_np(p_j.vertex[1], ci), transform)
-            v2 = np.dot(Triangle.get_vector_np(p_j.vertex[2], ci), transform)
+            v0 = np.dot(vectorize(ci, p_j.vertices[0]), transform)
+            v1 = np.dot(vectorize(ci, p_j.vertices[1]), transform)
+            v2 = np.dot(vectorize(ci, p_j.vertices[2]), transform)
             v0 = self.project(v0)
             v1 = self.project(v1)
             v2 = self.project(v2)
             vs = np.array([v0, v1, v2])
 
             N_vs.append(vs)
-            N_distance.append(Triangle.distance(ci, cj))
+            N_distance.append(distance(ci, cj))
 
         # collect all triangles and distances
         assert len(N_vs) == self.patch_count
@@ -122,21 +123,21 @@ class FormFactor(object):
                 # inside triangle
                 within = (u >= 0.) & (v >= 0.) & (u + v < 1.)
                 if within.any():
-                    distance = N_distance.copy()
-                    distance[~within] = np.inf
-                    ff[np.argmin(distance)] += self.delta_formfactor[x][y]
+                    tmp_distance = N_distance.copy()
+                    tmp_distance[~within] = np.inf
+                    ff[np.argmin(tmp_distance)] += self.delta_formfactor[x][y]
 
         return ff
 
     def get_transform_matrix(self, p):
-        c = Triangle.center_of(p)
-        x = Triangle.get_vector_np(p.vertex[0], c)
+        c = p.center()
+        x = vectorize(c, p.vertices[0])
         x = np.multiply(x, 1 / np.linalg.norm(x))
-        z = Triangle.get_normal_vector_np(p)
+        z = p.normal
         y = np.cross(z, x)
 
         A = np.array([x, y, z])
-        B = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        B = np.identity(3)
 
         try:
             X = np.linalg.solve(A, B)
